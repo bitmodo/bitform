@@ -1,0 +1,32 @@
+{
+    "compilerOptions": {
+        "incremental": true,
+        "target": "ES2019",
+        "module": "CommonJS",
+        "allowJs": true,
+        "checkJs": true,
+        "declaration": true,
+        "declarationMap": true,
+        "outDir": "dist",
+        "composite": true,
+        "strict": true,
+        "strictNullChecks": true,
+        "rootDirs": [
+            "lib"
+        ],
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "inlineSourceMap": true,
+        "inlineSources": true,
+        "noUnusedLocals": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "forceConsistentCasingInFileNames": true
+    },
+    "include": [
+        "lib/**/*"
+    ],
+    "exclude": [
+        "node_modules"
+    ]
+}

@@ -1,0 +1,8 @@
+# Ignore Jetbrains IDE project files
+.idea/
+
+# Ignore Node modules
+node_modules/
+
+# Ignore Typescript files
+dist/
