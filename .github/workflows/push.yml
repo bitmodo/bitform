@@ -1,0 +1,25 @@
+name: Push Actions
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [ '10.3.0', '10.18.1', '11.15.0', '12.4.0', '12.8.1', '12.10.0', '13.1.0', '13.7.0' ]
+    name: Build using Node ${{ matrix.node }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup node
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install Node packages
+        run: npm install
+      - name: Build
+        run: gulp
+      - name: Lint
+        run: gulp lint
+      - name: Run tests
+        run: gulp test

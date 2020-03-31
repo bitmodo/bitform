@@ -1,15 +1,12 @@
 {
-    "name": "template",
-    "description": "A template repository for Node.js projects",
-    "version": "1.0.0",
+    "name": "pib",
+    "description": "A framework for Node.js for making websites quickly and easily",
+    "version": "0.1.0",
     "private": false,
-    "main": "dist/main.js",
+    "main": "dist/index.js",
     "files": [
         "dist/**/*"
     ],
-    "bin": {
-        "program": "bin/program.js"
-    },
     "directories": {
         "lib": "lib",
         "doc": "doc",
@@ -19,6 +16,7 @@
     "scripts": {
         "build": "gulp build",
         "watch": "gulp watch",
+        "lint": "gulp lint",
         "test": "gulp test"
     },
     "dependencies": {},
@@ -49,17 +47,17 @@
     "bundledDependencies": [],
     "optionalDependencies": {},
     "engines": {
-        "node": "^13.11.0"
+        "node": "^10.19.0"
     },
     "keywords": [],
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/bitmodo/node-template.git"
+        "url": "git+https://github.com/bitmodo/pib.git"
     },
     "author": "Bitmodo",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/bitmodo/node-template/issues"
+        "url": "https://github.com/bitmodo/pib/issues"
     },
-    "homepage": "https://github.com/bitmodo/node-template#readme"
+    "homepage": "https://github.com/bitmodo/pib#readme"
 }

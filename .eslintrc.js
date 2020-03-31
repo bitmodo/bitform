@@ -18,15 +18,16 @@ module.exports = {
     parser: "@typescript-eslint/parser",
     parserOptions: {
         ecmaVersion: 2019,
+        sourceType: 'module',
+        ecmaFeatures: {
+            modules: true
+        },
     },
     plugins: [
         "@typescript-eslint",
     ],
     rules: {
-        indent: [
-            "error",
-            4
-        ],
+        indent: "off",
         "linebreak-style": "off",
         quotes: [
             "error",
@@ -36,5 +37,6 @@ module.exports = {
             "error",
             "always"
         ],
+        'no-unused-vars': "off",
     }
 };

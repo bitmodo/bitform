@@ -1,11 +1,11 @@
 import { src, dest, watch, parallel }       from 'gulp';
-import gulpIf                               from 'gulp-if';
 import { init as smInit, write as smWrite } from 'gulp-sourcemaps';
 
-import minimist from 'minimist';
-
 import { createProject } from 'gulp-typescript';
-import mocha             from 'gulp-mocha';
+
+import minimist = require('minimist');
+import gulpIf = require('gulp-if');
+import mocha = require('gulp-mocha');
 
 const eslint = require('gulp-eslint');
 
