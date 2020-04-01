@@ -1,8 +1,7 @@
 {
-    "name": "pib",
-    "description": "A framework for Node.js for making websites quickly and easily",
+    "name": "bitform",
+    "description": "A framework for Node.js designed to make creating websites quickly and easily",
     "version": "0.1.0",
-    "private": false,
     "main": "dist/index.js",
     "files": [
         "dist/**/*"
@@ -19,7 +18,9 @@
         "lint": "gulp lint",
         "test": "gulp test"
     },
-    "dependencies": {},
+    "dependencies": {
+        "@pib/api": "github:bitmodo/bitform-api#develop"
+    },
     "devDependencies": {
         "@types/chai": "^4.2.11",
         "@types/gulp": "^4.0.6",
@@ -47,17 +48,17 @@
     "bundledDependencies": [],
     "optionalDependencies": {},
     "engines": {
-        "node": "^10.19.0"
+        "node": ">=10.19.0"
     },
     "keywords": [],
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/bitmodo/pib.git"
+        "url": "git+https://github.com/bitmodo/bitform.git"
     },
     "author": "Bitmodo",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/bitmodo/pib/issues"
+        "url": "https://github.com/bitmodo/bitform/issues"
     },
-    "homepage": "https://github.com/bitmodo/pib#readme"
+    "homepage": "https://github.com/bitmodo/bitform#readme"
 }
