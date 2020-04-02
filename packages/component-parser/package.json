@@ -1,16 +1,16 @@
 {
     "name": "@bitform/component-parser",
-    "description": "The default component parser for Bitform",
+    "description": "The API for the component parser for Bitform",
     "version": "0.1.0-alpha",
     "main": "dist/index.js",
     "files": [
         "dist/**/*"
     ],
-    "dependencies": {},
-    "devDependencies": {},
-    "peerDependencies": {},
+    "dependencies": {
+        "@bitform/component": "^0.1.0-alpha",
+        "@types/node": "^13.11.0"
+    },
     "bundledDependencies": [],
-    "optionalDependencies": {},
     "engines": {
         "node": ">=10.19.0"
     },

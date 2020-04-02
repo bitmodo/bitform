@@ -6,11 +6,12 @@
     "files": [
         "dist/**/*"
     ],
-    "dependencies": {},
-    "devDependencies": {},
-    "peerDependencies": {},
+    "dependencies": {
+        "@bitform/component": "^0.1.0-alpha",
+        "@bitform/component-renderer": "^0.1.0-alpha",
+        "@types/node": "^13.11.0"
+    },
     "bundledDependencies": [],
-    "optionalDependencies": {},
     "engines": {
         "node": ">=10.19.0"
     },

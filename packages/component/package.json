@@ -6,11 +6,10 @@
     "files": [
         "dist/**/*"
     ],
-    "dependencies": {},
-    "devDependencies": {},
-    "peerDependencies": {},
+    "dependencies": {
+        "@types/node": "^13.11.0"
+    },
     "bundledDependencies": [],
-    "optionalDependencies": {},
     "engines": {
         "node": ">=10.19.0"
     },
