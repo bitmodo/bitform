@@ -1,0 +1,29 @@
+{
+    "name": "bitform",
+    "description": "A framework for Node.js designed to make creating websites quickly and easily",
+    "version": "0.1.0-alpha",
+    "main": "dist/index.js",
+    "files": [
+        "dist/**/*"
+    ],
+    "dependencies": {
+        "@bitform/component": "^0.1.0-alpha",
+        "@bitform/module": "^0.1.0-alpha",
+        "@bitform/routing": "^0.1.0-alpha"
+    },
+    "bundledDependencies": [],
+    "engines": {
+        "node": ">=10.19.0"
+    },
+    "keywords": [],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/bitmodo/bitform.git"
+    },
+    "author": "Bitmodo",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/bitmodo/bitform/issues"
+    },
+    "homepage": "https://github.com/bitmodo/bitform#readme"
+}

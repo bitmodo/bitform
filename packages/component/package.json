@@ -1,0 +1,28 @@
+{
+    "name": "@bitform/component",
+    "description": "The component API for Bitform",
+    "version": "0.1.0-alpha",
+    "main": "dist/index.js",
+    "files": [
+        "dist/**/*"
+    ],
+    "dependencies": {},
+    "devDependencies": {},
+    "peerDependencies": {},
+    "bundledDependencies": [],
+    "optionalDependencies": {},
+    "engines": {
+        "node": ">=10.19.0"
+    },
+    "keywords": [],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/bitmodo/bitform.git"
+    },
+    "author": "Bitmodo",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/bitmodo/bitform/issues"
+    },
+    "homepage": "https://github.com/bitmodo/bitform#readme"
+}
