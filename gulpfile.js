@@ -2,6 +2,7 @@
 
 const { src, dest, parallel, series, watch } = require('gulp');
 const sourcemap                              = require('gulp-sourcemaps');
+const eslint                                 = require('gulp-eslint');
 const ts                                     = require('gulp-typescript');
 
 const fs   = require('fs');
@@ -54,6 +55,26 @@ function addWatchTask(name, build) {
     return fn;
 }
 
+function addLintTask(name) {
+    const fn = function () {
+        const project = ts.createProject(path.join('packages', name, 'tsconfig.json'));
+
+        return project.src()
+                      .pipe(eslint())
+                      .pipe(eslint.format())
+                      .pipe(eslint.failAfterError());
+    };
+
+    let taskName   = `lint${capitalize(name)}`;
+    fn.name        = taskName;
+    fn.displayName = `lint:${name}`;
+    fn.description = `Lint the ${name} project`;
+
+    exports[taskName] = fn;
+
+    return fn;
+}
+
 function addTestTask(name) {
     const fn = function () {
         return src(path.join('packages', name, 'test', '**', '*'));
@@ -86,29 +107,32 @@ function addCleanTask(name) {
 
 // Setup functions
 
-function setupProject(projectBuilds, projectWatches, projectTests, projectCleans, project) {
+function setupProject(projectBuilds, projectWatches, projectLints, projectTests, projectCleans, project) {
     let buildTask = addBuildTask(project);
     let watchTask = addWatchTask(project, buildTask);
+    let lintTask  = addLintTask(project);
     let testTask  = addTestTask(project);
     let cleanTask = addCleanTask(project);
 
     projectBuilds  = projectBuilds.concat(buildTask);
     projectWatches = projectWatches.concat(watchTask);
+    projectLints   = projectLints.concat(lintTask);
     projectTests   = projectTests.concat(testTask);
     projectCleans  = projectCleans.concat(cleanTask);
 
-    const fn = series(buildTask, testTask);
-    fn.name = project;
-    fn.displayName = project;
-    fn.description = `Build and test the ${project} project`;
+    const fn         = series(buildTask, testTask);
+    fn.name          = project;
+    fn.displayName   = project;
+    fn.description   = `Build and test the ${project} project`;
     exports[project] = fn;
 
-    return [projectBuilds, projectWatches, projectTests, projectCleans];
+    return [projectBuilds, projectWatches, projectLints, projectTests, projectCleans];
 }
 
 function setupProjects(projects) {
     let projectBuilds  = [];
     let projectWatches = [];
+    let projectLints   = [];
     let projectTests   = [];
     let projectCleans  = [];
 
@@ -118,44 +142,50 @@ function setupProjects(projects) {
             let testTasks  = [];
 
             for (let proj of project) {
-                [buildTasks, projectWatches, testTasks, projectCleans] = setupProject(buildTasks, projectWatches, testTasks, projectCleans, proj);
+                [buildTasks, projectWatches, projectLints, testTasks, projectCleans] = setupProject(buildTasks, projectWatches, projectLints, testTasks, projectCleans, proj);
             }
 
             projectBuilds = projectBuilds.concat(parallel(buildTasks));
             projectTests  = projectTests.concat(parallel(testTasks));
         } else {
-            [projectBuilds, projectWatches, projectTests, projectCleans] = setupProject(projectBuilds, projectWatches, projectTests, projectCleans, project);
+            [projectBuilds, projectWatches, projectLints, projectTests, projectCleans] = setupProject(projectBuilds, projectWatches, projectLints, projectTests, projectCleans, project);
         }
     }
 
-    const buildFn = series(projectBuilds);
-    buildFn.name = 'build';
+    const buildFn       = series(projectBuilds);
+    buildFn.name        = 'build';
     buildFn.displayName = 'build';
     buildFn.description = 'Build all of the projects';
-    exports.build = buildFn;
+    exports.build       = buildFn;
 
-    const watchFn = series(exports.build, parallel(projectWatches));
-    watchFn.name = 'watch';
+    const watchFn       = series(exports.build, parallel(projectWatches));
+    watchFn.name        = 'watch';
     watchFn.displayName = 'watch';
     watchFn.description = 'Build all of the projects then watch them and rebuild when they have changes';
-    exports.watch = watchFn;
+    exports.watch       = watchFn;
 
-    const testFn = series(projectTests);
-    testFn.name = 'test';
+    const lintFn       = parallel(projectLints);
+    lintFn.name        = 'lint';
+    lintFn.displayName = 'lint';
+    lintFn.description = 'Lint all of the projects';
+    exports.lint       = lintFn;
+
+    const testFn       = series(projectTests);
+    testFn.name        = 'test';
     testFn.displayName = 'test';
     testFn.description = 'Test all of the projects';
-    exports.test  = testFn;
+    exports.test       = testFn;
 
-    const cleanFn = parallel(projectCleans);
-    cleanFn.name = 'clean';
+    const cleanFn       = parallel(projectCleans);
+    cleanFn.name        = 'clean';
     cleanFn.displayName = 'clean';
     cleanFn.description = 'Clean all of the build products in the projects';
-    exports.clean = cleanFn;
+    exports.clean       = cleanFn;
 
-    const fn = series(exports.build, exports.test);
-    fn.name = 'default';
+    const fn       = series(exports.build, exports.lint, exports.test);
+    fn.name        = 'default';
     fn.displayName = 'default';
-    fn.description = 'Build and test all of the projects';
+    fn.description = 'Build, lint, and test all of the projects';
     return fn;
 }
 
