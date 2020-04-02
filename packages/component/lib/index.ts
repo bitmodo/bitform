@@ -90,6 +90,8 @@ export class Node {
  * The reason for this interface is to allow a separation of different types of components while still having at least
  * one common ancestor. This makes it easy to separate things like regular components and component groups while still
  * allowing them to be rendered in the same fashion.
+ *
+ * Any class that extends this is responsible for also including any nodes that are in child components.
  */
 export interface IComponent {
     nodes: Node[];

@@ -1,19 +1,30 @@
 import { Component } from '@bitform/component';
 
+class RenderDataIterator implements Iterator<Component> {
+    #position: number = 0;
+    readonly #components: Component[];
+
+    public constructor(components: Component[]) {
+        this.#components = components;
+    }
+
+    next(): IteratorResult<Component> {
+        const value = this.#components[this.#position++];
+        return {done: this.#position == this.#components.length, value: value};
+    }
+}
+
 /**
- * A component renderer.
+ * Data to pass to a render.
  *
- * This will take components and convert them into a rendered format. The default functionality of this for Bitform is
- * to convert it into HTML. However, if a different format or result is desired, this class can be extended freely to
- * provide whatever functionality might be desired.
+ * This is data that is passed to a renderer to get rendered. The class itself is basically a wrapper around a
+ * component array, but provides a useful add method and allows for extensions to provide custom functionality in the
+ * data portion.
  */
-export abstract class Renderer {
-    #components: Component[];
+export class RenderData implements Iterable<Component> {
+    #components: Component[] = [];
 
-    #rendered: boolean = false;
-    #text: string[] = [];
-
-    protected constructor(components: Component[] = []) {
+    public constructor(components: Component[] = []) {
         this.#components = components;
     }
 
@@ -35,36 +46,47 @@ export abstract class Renderer {
         }
     }
 
-    public abstract render(): void;
+    [Symbol.iterator](): Iterator<Component> {
+        return new RenderDataIterator(this.#components);
+    }
+}
 
-    private _render(): void {
-        if (this.#rendered) return;
+/**
+ * A completed render.
+ *
+ * This represents a fully completed render. Behind the scenes, it is an array of strings because it allows the most
+ * functionality with the final data. Concatenating multiple strings is quicker if it is done using a string array, plus
+ * it can be converted into a buffer fairly easily.
+ */
+export class Render {
+    readonly #text: string[];
 
-        this.render();
-        this.#rendered = true;
+    public constructor(text: string[] = []) {
+        this.#text = text;
     }
 
-    protected push(...text: (string | string[])[]): void {
-        for (let item of text) {
-            if (Array.isArray(item)) {
-                this.push(item);
-            } else {
-                this.#text.push(item);
-            }
-        }
+    public get array(): string[] {
+        return this.#text;
     }
 
     public get string(): string {
-        this._render();
-
         return this.#text.join('');
     }
 
     public get buffer(): Buffer {
-        this._render();
-
         return Buffer.from(this.#text);
     }
+}
+
+/**
+ * A component renderer.
+ *
+ * This will take components and convert them into a rendered format. The default functionality of this for Bitform is
+ * to convert it into HTML. However, if a different format or result is desired, this class can be extended freely to
+ * provide whatever functionality might be desired.
+ */
+export abstract class Renderer {
+    public abstract render(data: RenderData): Render;
 }
 
 export default Renderer;
