@@ -18,6 +18,6 @@ jobs:
       - name: Install Node packages
         run: npm install
       - name: Setup lerna
-        run: lerna bootstrap
+        run: npx lerna bootstrap
       - name: Build, lint, & test
         run: gulp
