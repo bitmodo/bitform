@@ -116,11 +116,11 @@ function setupProject(projectBuilds, projectWatches, projectLints, projectTests,
     let testTask  = addTestTask(project);
     let cleanTask = addCleanTask(project);
 
-    projectBuilds  = projectBuilds.concat(buildTask);
-    projectWatches = projectWatches.concat(watchTask);
-    projectLints   = projectLints.concat(lintTask);
-    projectTests   = projectTests.concat(testTask);
-    projectCleans  = projectCleans.concat(cleanTask);
+    projectBuilds.push(buildTask);
+    projectWatches.push(watchTask);
+    projectLints.push(lintTask);
+    projectTests.push(testTask);
+    projectCleans.push(cleanTask);
 
     const fn         = series(buildTask, testTask);
     fn.name          = project;
@@ -202,11 +202,13 @@ function deepCheck(projects, project) {
 }
 
 let projects = [['util'], ['component', 'provider', 'routing-path'], ['component-parser', 'component-renderer', 'layout', 'routing'], ['page'], ['module']];
+let extras   = [];
 for (let project of fs.readdirSync('packages')) {
     if (fs.statSync(path.join('packages', project)).isDirectory() && fs.existsSync(path.join('packages', project, 'tsconfig.json'))) {
         if (!deepCheck(projects, project))
-            projects = projects.concat(project);
+            extras.push(project);
     }
 }
 
+projects.push(extras);
 exports.default = setupProjects(projects);
