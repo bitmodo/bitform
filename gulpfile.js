@@ -201,7 +201,7 @@ function deepCheck(projects, project) {
     return false;
 }
 
-let projects = [['component', 'provider', 'routing-path'], ['component-parser', 'component-renderer', 'page', 'routing'], ['module']];
+let projects = [['util'], ['component', 'provider', 'routing-path'], ['component-parser', 'component-renderer', 'page', 'routing'], ['module']];
 for (let project of fs.readdirSync('packages')) {
     if (fs.statSync(path.join('packages', project)).isDirectory() && fs.existsSync(path.join('packages', project, 'tsconfig.json'))) {
         if (!deepCheck(projects, project))
