@@ -79,6 +79,40 @@ export class Node {
     public set children(children: NodeChild[]) {
         this.#children = children;
     }
+
+    public add(item: (Attribute | NodeChild) | (Attribute | NodeChild)[]): this {
+        if (Array.isArray(item)) {
+            for (let element of item) {
+                this.add(element);
+            }
+        } else {
+            if (item instanceof Attribute) {
+                this.#attributes.push(item);
+            } else {
+                this.#children.push(item);
+            }
+        }
+
+        return this;
+    }
+
+    public getAttribute(name: string): Attribute | undefined {
+        for (let attribute of this.#attributes) {
+            if (attribute.name === name)
+                return attribute;
+        }
+
+        return undefined;
+    }
+
+    public contains(item: Attribute): boolean {
+        for (let attribute of this.#attributes) {
+            if (attribute.name === item.name)
+                return true;
+        }
+
+        return false;
+    }
 }
 
 /**
@@ -143,6 +177,18 @@ export abstract class AbstractComponentGroup<T extends IComponent> extends Compo
 
     public set items(items: T[]) {
         this.#items = items;
+    }
+
+    public add(...items: (T | T[])[]): this {
+        for (let item of items) {
+            if (Array.isArray(item)) {
+                this.add(item);
+            } else {
+                this.#items.push(item);
+            }
+        }
+
+        return this;
     }
 }
 
