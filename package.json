@@ -2,6 +2,10 @@
     "name": "root",
     "private": true,
     "devDependencies": {
+        "@babel/preset-typescript": "^7.9.0",
+        "@jest/core": "^25.2.7",
+        "@jest/reporters": "^25.2.6",
+        "@types/jest": "^25.1.5",
         "@types/node": "^13.11.0",
         "@typescript-eslint/eslint-plugin": "^2.26.0",
         "@typescript-eslint/parser": "^2.26.0",
@@ -9,11 +13,11 @@
         "eslint": "^6.8.0",
         "gulp": "^4.0.2",
         "gulp-eslint": "^6.0.0",
-        "gulp-jest": "^4.0.3",
         "gulp-sourcemaps": "^2.6.5",
         "gulp-typescript": "^6.0.0-alpha.1",
         "jest": "^25.2.6",
-        "jest-cli": "^25.2.6",
+        "jest-cli": "^25.2.7",
+        "jest-util": "^25.2.6",
         "lerna": "^3.20.2",
         "typescript": "^3.7.2"
     }

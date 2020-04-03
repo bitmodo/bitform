@@ -4,7 +4,8 @@ const { src, dest, parallel, series, watch } = require('gulp');
 const sourcemap                              = require('gulp-sourcemaps');
 const eslint                                 = require('gulp-eslint');
 const ts                                     = require('gulp-typescript');
-const jest                                   = require('gulp-jest').default;
+
+const jest                                   = require('@jest/core');
 
 const fs   = require('fs');
 const del  = require('del');
@@ -78,8 +79,19 @@ function addLintTask(name) {
 
 function addTestTask(name) {
     const fn = function () {
-        return src(path.join('packages', name, 'test', '**', '*'))
-            .pipe(jest());
+        return jest.runCLI({
+            cache: true,
+            cacheDirectory: `<rootDir>/build/cache/${name}`,
+            displayName: {
+                color: 'blue',
+                name: name,
+            },
+            passWithNoTests: true,
+            reporters: ['<rootDir>/jest-reporter.js'],
+            roots: [`<rootDir>/packages/${name}`],
+            silent: true,
+            testMatch: [`<rootDir>/packages/${name}/test/**/*.ts`],
+        }, ['.']);
     };
 
     let taskName   = `test${capitalize(name)}`;
@@ -92,9 +104,45 @@ function addTestTask(name) {
     return fn;
 }
 
+function addCoverageTask(name) {
+    const fn = function () {
+        return jest.runCLI({
+            cache: true,
+            cacheDirectory: `<rootDir>/build/cache/${name}`,
+            collectCoverage: true,
+            collectCoverageFrom: [`<rootDir>/packages/${name}/lib/**/*`],
+            coverage: true,
+            coverageDirectory: `<rootDir>/build/coverage/${name}`,
+            coverageReporters: ['json', 'lcov', 'clover'],
+            displayName: {
+                color: 'blue',
+                name: name,
+            },
+            passWithNoTests: true,
+            reporters: ['<rootDir>/jest-reporter.js'],
+            roots: [`<rootDir>/packages/${name}`],
+            silent: true,
+            testMatch: [`<rootDir>/packages/${name}/test/**/*.ts`],
+        }, ['.']);
+    };
+
+    let taskName   = `coverage${capitalize(name)}`;
+    fn.name        = taskName;
+    fn.displayName = `coverage:${name}`;
+    fn.description = `Get the code coverage for the ${name} project`;
+
+    exports[taskName] = fn;
+
+    return fn;
+}
+
 function addCleanTask(name) {
     const fn = function () {
-        return del(path.join('packages', name, 'dist'));
+        return parallel(
+            del(path.join('packages', name, 'dist')),
+            del(path.join('build', 'cache', name)),
+            del(path.join('build', 'coverage', name)),
+        );
     };
 
     let taskName   = `clean${capitalize(name)}`;
@@ -109,46 +157,50 @@ function addCleanTask(name) {
 
 // Setup functions
 
-function setupProject(projectBuilds, projectWatches, projectLints, projectTests, projectCleans, project) {
-    let buildTask = addBuildTask(project);
-    let watchTask = addWatchTask(project, buildTask);
-    let lintTask  = addLintTask(project);
-    let testTask  = addTestTask(project);
-    let cleanTask = addCleanTask(project);
+let projectWatches   = [];
+let projectLints     = [];
+let projectCoverages = [];
+let projectTests     = [];
+let projectCleans    = [];
+
+function setupProject(projectBuilds, project) {
+    let buildTask    = addBuildTask(project);
+    let watchTask    = addWatchTask(project, buildTask);
+    let lintTask     = addLintTask(project);
+    let coverageTask = addCoverageTask(project);
+    let testTask     = addTestTask(project);
+    let cleanTask    = addCleanTask(project);
 
     projectBuilds.push(buildTask);
     projectWatches.push(watchTask);
     projectLints.push(lintTask);
+    projectCoverages.push(coverageTask);
     projectTests.push(testTask);
     projectCleans.push(cleanTask);
 
-    const fn         = series(buildTask, testTask);
+    const fn         = series(buildTask, lintTask, testTask, coverageTask);
     fn.name          = project;
     fn.displayName   = project;
     fn.description   = `Build and test the ${project} project`;
     exports[project] = fn;
 
-    return [projectBuilds, projectWatches, projectLints, projectTests, projectCleans];
+    return [projectBuilds];
 }
 
 function setupProjects(projects) {
-    let projectBuilds  = [];
-    let projectWatches = [];
-    let projectLints   = [];
-    let projectTests   = [];
-    let projectCleans  = [];
+    let projectBuilds = [];
 
     for (let project of projects) {
         if (Array.isArray(project)) {
             let buildTasks = [];
 
             for (let proj of project) {
-                [buildTasks, projectWatches, projectLints, projectTests, projectCleans] = setupProject(buildTasks, projectWatches, projectLints, projectTests, projectCleans, proj);
+                [buildTasks] = setupProject(buildTasks, proj);
             }
 
             projectBuilds = projectBuilds.concat(parallel(buildTasks));
         } else {
-            [projectBuilds, projectWatches, projectLints, projectTests, projectCleans] = setupProject(projectBuilds, projectWatches, projectLints, projectTests, projectCleans, project);
+            [projectBuilds] = setupProject(projectBuilds, project);
         }
     }
 
@@ -170,7 +222,13 @@ function setupProjects(projects) {
     lintFn.description = 'Lint all of the projects';
     exports.lint       = lintFn;
 
-    const testFn       = parallel(projectTests);
+    const coverageFn       = parallel(projectCoverages);
+    coverageFn.name        = 'coverage';
+    coverageFn.displayName = 'coverage';
+    coverageFn.description = 'Get the code coverage for all of the projects';
+    exports.coverage       = coverageFn;
+
+    const testFn       = series(projectTests);
     testFn.name        = 'test';
     testFn.displayName = 'test';
     testFn.description = 'Test all of the projects';
@@ -182,7 +240,7 @@ function setupProjects(projects) {
     cleanFn.description = 'Clean all of the build products in the projects';
     exports.clean       = cleanFn;
 
-    const fn       = series(exports.build, exports.lint, exports.test);
+    const fn       = series(exports.build, exports.lint, exports.test, exports.coverage);
     fn.name        = 'default';
     fn.displayName = 'default';
     fn.description = 'Build, lint, and test all of the projects';
