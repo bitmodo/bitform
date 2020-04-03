@@ -4,6 +4,7 @@ const { src, dest, parallel, series, watch } = require('gulp');
 const sourcemap                              = require('gulp-sourcemaps');
 const eslint                                 = require('gulp-eslint');
 const ts                                     = require('gulp-typescript');
+const jest                                   = require('gulp-jest').default;
 
 const fs   = require('fs');
 const del  = require('del');
@@ -77,7 +78,8 @@ function addLintTask(name) {
 
 function addTestTask(name) {
     const fn = function () {
-        return src(path.join('packages', name, 'test', '**', '*'));
+        return src(path.join('packages', name, 'test', '**', '*'))
+            .pipe(jest());
     };
 
     let taskName   = `test${capitalize(name)}`;
@@ -139,14 +141,12 @@ function setupProjects(projects) {
     for (let project of projects) {
         if (Array.isArray(project)) {
             let buildTasks = [];
-            let testTasks  = [];
 
             for (let proj of project) {
-                [buildTasks, projectWatches, projectLints, testTasks, projectCleans] = setupProject(buildTasks, projectWatches, projectLints, testTasks, projectCleans, proj);
+                [buildTasks, projectWatches, projectLints, projectTests, projectCleans] = setupProject(buildTasks, projectWatches, projectLints, projectTests, projectCleans, proj);
             }
 
             projectBuilds = projectBuilds.concat(parallel(buildTasks));
-            projectTests  = projectTests.concat(parallel(testTasks));
         } else {
             [projectBuilds, projectWatches, projectLints, projectTests, projectCleans] = setupProject(projectBuilds, projectWatches, projectLints, projectTests, projectCleans, project);
         }
@@ -170,7 +170,7 @@ function setupProjects(projects) {
     lintFn.description = 'Lint all of the projects';
     exports.lint       = lintFn;
 
-    const testFn       = series(projectTests);
+    const testFn       = parallel(projectTests);
     testFn.name        = 'test';
     testFn.displayName = 'test';
     testFn.description = 'Test all of the projects';

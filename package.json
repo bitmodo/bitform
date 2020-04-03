@@ -9,8 +9,11 @@
         "eslint": "^6.8.0",
         "gulp": "^4.0.2",
         "gulp-eslint": "^6.0.0",
+        "gulp-jest": "^4.0.3",
         "gulp-sourcemaps": "^2.6.5",
         "gulp-typescript": "^6.0.0-alpha.1",
+        "jest": "^25.2.6",
+        "jest-cli": "^25.2.6",
         "lerna": "^3.20.2",
         "typescript": "^3.7.2"
     }
