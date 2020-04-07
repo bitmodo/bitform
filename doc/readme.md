@@ -6,4 +6,5 @@ Here you will be able to find information about how to use Bitform and all the i
 ## Table of Contents
 Here is a short list of some useful pages.
 
+ * [Contribution](contributing.md)
  * [Bitform vision](vision.md)
