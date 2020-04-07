@@ -2,7 +2,10 @@
 
 const { src, dest, parallel, series, watch } = require('gulp');
 const sourcemap                              = require('gulp-sourcemaps');
+const eslint                                 = require('gulp-eslint');
 const ts                                     = require('gulp-typescript');
+
+const jest = require('@jest/core');
 
 const fs   = require('fs');
 const del  = require('del');
@@ -54,10 +57,68 @@ function addWatchTask(name, build) {
     return fn;
 }
 
-function addTestTask(name) {
+function addLintTask(name) {
     const fn = function () {
-        return src(path.join('packages', name, 'test', '**', '*'));
-    }
+        const project = ts.createProject(path.join('packages', name, 'tsconfig.json'));
+
+        return project.src()
+                      .pipe(eslint())
+                      .pipe(eslint.format())
+                      .pipe(eslint.failAfterError());
+    };
+
+    let taskName   = `lint${capitalize(name)}`;
+    fn.name        = taskName;
+    fn.displayName = `lint:${name}`;
+    fn.description = `Lint the ${name} project`;
+
+    exports[taskName] = fn;
+
+    return fn;
+}
+
+function generateJestFunction(name, coverage) {
+    return function () {
+        return jest.runCLI(Object.assign({
+            cache:           true,
+            cacheDirectory:  '<rootDir>/build/cache' + (name === '*' ? '' : `/${name}`),
+            displayName:     {
+                color: 'blue',
+                name:  name === '*' ? 'all' : name,
+            },
+            passWithNoTests: true,
+            preset:          'ts-jest',
+            reporters:       [['<rootDir>/jest-reporter.js', { output: !coverage }]],
+            roots:           ['<rootDir>/packages' + (name === '*' ? '' : `/${name}`)],
+            silent:          true,
+            testMatch:       [`<rootDir>/packages/${name}/test/**/*.ts`],
+        }, coverage ? {
+            collectCoverage:     true,
+            collectCoverageFrom: [`<rootDir>/packages/${name}/lib/**/*`],
+            coverage:            true,
+            coverageDirectory:   '<rootDir>/build/coverage' + (name === '*' ? '' : `/${name}`),
+            coverageReporters:   ['json', 'lcov', 'clover'],
+        } : {}), ['.']);
+    };
+}
+
+function addTestTask(name) {
+    const fn = generateJestFunction(name, false);
+    // const fn = function () {
+    //     return jest.runCLI({
+    //         cache:           true,
+    //         cacheDirectory:  `<rootDir>/build/cache/${name}`,
+    //         displayName:     {
+    //             color: 'blue',
+    //             name:  name,
+    //         },
+    //         passWithNoTests: true,
+    //         reporters:       ['<rootDir>/jest-reporter.js'],
+    //         roots:           [`<rootDir>/packages/${name}`],
+    //         silent:          true,
+    //         testMatch:       [`<rootDir>/packages/${name}/test/**/*.ts`],
+    //     }, ['.']);
+    // };
 
     let taskName   = `test${capitalize(name)}`;
     fn.name        = taskName;
@@ -69,9 +130,46 @@ function addTestTask(name) {
     return fn;
 }
 
+function addCoverageTask(name) {
+    const fn = generateJestFunction(name, true);
+    // const fn = function () {
+    //     return jest.runCLI({
+    //         cache:               true,
+    //         cacheDirectory:      `<rootDir>/build/cache/${name}`,
+    //         collectCoverage:     true,
+    //         collectCoverageFrom: [`<rootDir>/packages/${name}/lib/**/*`],
+    //         coverage:            true,
+    //         coverageDirectory:   `<rootDir>/build/coverage/${name}`,
+    //         coverageReporters:   ['json', 'lcov', 'clover'],
+    //         displayName:         {
+    //             color: 'blue',
+    //             name:  name,
+    //         },
+    //         passWithNoTests:     true,
+    //         reporters:           ['<rootDir>/jest-reporter.js'],
+    //         roots:               [`<rootDir>/packages/${name}`],
+    //         silent:              true,
+    //         testMatch:           [`<rootDir>/packages/${name}/test/**/*.ts`],
+    //     }, ['.']);
+    // };
+
+    let taskName   = `coverage${capitalize(name)}`;
+    fn.name        = taskName;
+    fn.displayName = `coverage:${name}`;
+    fn.description = `Get the code coverage for the ${name} project`;
+
+    exports[taskName] = fn;
+
+    return fn;
+}
+
 function addCleanTask(name) {
     const fn = function () {
-        return del(path.join('packages', name, 'dist'));
+        return parallel(
+            del(path.join('packages', name, 'dist')),
+            del(path.join('build', 'cache', name)),
+            del(path.join('build', 'coverage', name)),
+        );
     };
 
     let taskName   = `clean${capitalize(name)}`;
@@ -86,76 +184,93 @@ function addCleanTask(name) {
 
 // Setup functions
 
-function setupProject(projectBuilds, projectWatches, projectTests, projectCleans, project) {
-    let buildTask = addBuildTask(project);
-    let watchTask = addWatchTask(project, buildTask);
-    let testTask  = addTestTask(project);
-    let cleanTask = addCleanTask(project);
+let projectWatches   = [];
+let projectLints     = [];
+let projectCoverages = [];
+let projectTests     = [];
+let projectCleans    = [];
 
-    projectBuilds  = projectBuilds.concat(buildTask);
-    projectWatches = projectWatches.concat(watchTask);
-    projectTests   = projectTests.concat(testTask);
-    projectCleans  = projectCleans.concat(cleanTask);
+function setupProject(projectBuilds, project) {
+    let buildTask    = addBuildTask(project);
+    let watchTask    = addWatchTask(project, buildTask);
+    let lintTask     = addLintTask(project);
+    let coverageTask = addCoverageTask(project);
+    let testTask     = addTestTask(project);
+    let cleanTask    = addCleanTask(project);
 
-    const fn = series(buildTask, testTask);
-    fn.name = project;
-    fn.displayName = project;
-    fn.description = `Build and test the ${project} project`;
+    projectBuilds.push(buildTask);
+    projectWatches.push(watchTask);
+    projectLints.push(lintTask);
+    projectCoverages.push(coverageTask);
+    projectTests.push(testTask);
+    projectCleans.push(cleanTask);
+
+    const fn         = series(buildTask, lintTask, testTask, coverageTask);
+    fn.name          = project;
+    fn.displayName   = project;
+    fn.description   = `Build and test the ${project} project`;
     exports[project] = fn;
 
-    return [projectBuilds, projectWatches, projectTests, projectCleans];
+    return [projectBuilds];
 }
 
 function setupProjects(projects) {
-    let projectBuilds  = [];
-    let projectWatches = [];
-    let projectTests   = [];
-    let projectCleans  = [];
+    let projectBuilds = [];
 
     for (let project of projects) {
         if (Array.isArray(project)) {
             let buildTasks = [];
-            let testTasks  = [];
 
             for (let proj of project) {
-                [buildTasks, projectWatches, testTasks, projectCleans] = setupProject(buildTasks, projectWatches, testTasks, projectCleans, proj);
+                [buildTasks] = setupProject(buildTasks, proj);
             }
 
             projectBuilds = projectBuilds.concat(parallel(buildTasks));
-            projectTests  = projectTests.concat(parallel(testTasks));
         } else {
-            [projectBuilds, projectWatches, projectTests, projectCleans] = setupProject(projectBuilds, projectWatches, projectTests, projectCleans, project);
+            [projectBuilds] = setupProject(projectBuilds, project);
         }
     }
 
-    const buildFn = series(projectBuilds);
-    buildFn.name = 'build';
+    const buildFn       = series(projectBuilds);
+    buildFn.name        = 'build';
     buildFn.displayName = 'build';
     buildFn.description = 'Build all of the projects';
-    exports.build = buildFn;
+    exports.build       = buildFn;
 
-    const watchFn = series(exports.build, parallel(projectWatches));
-    watchFn.name = 'watch';
+    const watchFn       = series(exports.build, parallel(projectWatches));
+    watchFn.name        = 'watch';
     watchFn.displayName = 'watch';
     watchFn.description = 'Build all of the projects then watch them and rebuild when they have changes';
-    exports.watch = watchFn;
+    exports.watch       = watchFn;
 
-    const testFn = series(projectTests);
-    testFn.name = 'test';
+    const lintFn       = parallel(projectLints);
+    lintFn.name        = 'lint';
+    lintFn.displayName = 'lint';
+    lintFn.description = 'Lint all of the projects';
+    exports.lint       = lintFn;
+
+    const coverageFn       = generateJestFunction('*', true);
+    coverageFn.name        = 'coverage';
+    coverageFn.displayName = 'coverage';
+    coverageFn.description = 'Get the code coverage for all of the projects';
+    exports.coverage       = coverageFn;
+
+    const testFn       = generateJestFunction('*', false);
+    testFn.name        = 'test';
     testFn.displayName = 'test';
     testFn.description = 'Test all of the projects';
-    exports.test  = testFn;
+    exports.test       = testFn;
 
-    const cleanFn = parallel(projectCleans);
-    cleanFn.name = 'clean';
+    const cleanFn       = parallel(projectCleans);
+    cleanFn.name        = 'clean';
     cleanFn.displayName = 'clean';
     cleanFn.description = 'Clean all of the build products in the projects';
-    exports.clean = cleanFn;
+    exports.clean       = cleanFn;
 
-    const fn = series(exports.build, exports.test);
-    fn.name = 'default';
+    const fn       = series(exports.build, exports.lint, exports.test, exports.coverage);
+    fn.name        = 'default';
     fn.displayName = 'default';
-    fn.description = 'Build and test all of the projects';
+    fn.description = 'Build, lint, and test all of the projects';
     return fn;
 }
 
@@ -171,12 +286,14 @@ function deepCheck(projects, project) {
     return false;
 }
 
-let projects = [['component', 'module', 'routing']];
+let projects = [['util'], ['component', 'provider', 'routing-path'], ['component-parser', 'component-renderer', 'layout', 'routing'], ['page'], ['module']];
+let extras   = [];
 for (let project of fs.readdirSync('packages')) {
     if (fs.statSync(path.join('packages', project)).isDirectory() && fs.existsSync(path.join('packages', project, 'tsconfig.json'))) {
         if (!deepCheck(projects, project))
-            projects = projects.concat(project);
+            extras.push(project);
     }
 }
 
+projects.push(extras);
 exports.default = setupProjects(projects);

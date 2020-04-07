@@ -1,5 +1,0 @@
-{
-    "extension": ["ts"],
-    "ui": "bdd",
-    "require": "ts-node/register"
-}

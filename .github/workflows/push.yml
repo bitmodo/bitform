@@ -17,9 +17,33 @@ jobs:
           node-version: ${{ matrix.node }}
       - name: Install Node packages
         run: npm install
+      - name: Setup lerna
+        run: npx lerna bootstrap
       - name: Build
-        run: gulp
+        run: gulp build
       - name: Lint
         run: gulp lint
-      - name: Run tests
+      - name: Test
         run: gulp test
+  coverage:
+    runs-on: ubuntu-latest
+    name: Generate coverage
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '13.7.0'
+      - name: Install Node packages
+        run: npm install
+      - name: Setup lerna
+        run: npx lerna bootstrap
+      - name: Build
+        run: gulp build
+      - name: Run coverage
+        uses: paambaati/codeclimate-action@v2.5.6
+        env:
+          CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_ID }}
+        with:
+          coverageCommand: gulp coverage
+          coverageLocations: "${{ github.workspace }}/build/coverage/lcov.info:lcov"

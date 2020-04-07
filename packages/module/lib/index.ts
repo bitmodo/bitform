@@ -1,1 +1,8 @@
-console.log('Module');
+/**
+ *
+ */
+export abstract class Module {
+
+}
+
+export default Module;

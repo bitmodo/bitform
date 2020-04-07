@@ -1,4 +1,15 @@
 # Bitform
+
+[![License](https://img.shields.io/github/license/bitmodo/bitform)](https://github.com/bitmodo/bitform/blob/master/LICENSE)
+[![NPM package](https://img.shields.io/npm/v/bitform)](https://www.npmjs.com/package/bitform)
+[![Build status](https://img.shields.io/github/workflow/status/bitmodo/bitform/Push%20Actions)](https://github.com/bitmodo/bitform/actions)
+[![Coverage](https://img.shields.io/codeclimate/coverage/bitmodo/bitform?logo=code-climate)](https://codeclimate.com/github/bitmodo/bitform)
+[![Code quality](https://img.shields.io/codeclimate/maintainability/bitmodo/bitform?label=code%20quality&logo=code-climate)](https://codeclimate.com/github/bitmodo/bitform)
+
+<p align="center">
+    <a href="https://github.com/bitmodo/bitform/blob/master/doc/readme.md">Docs</a>
+</p>
+
 Bitform is a framework for Node.js designed make creating websites quickly and easily.
 Bitform doesn't use the design that frameworks typically use.
 Instead, it opts to use a different design aimed to make everything interchangeable and easy to develop.

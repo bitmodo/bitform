@@ -4,5 +4,6 @@
 # Ignore Node modules
 node_modules/
 
-# Ignore Typescript files
+# Ignore build files
 dist/
+build/

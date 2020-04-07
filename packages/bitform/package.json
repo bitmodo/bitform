@@ -9,7 +9,9 @@
     "dependencies": {
         "@bitform/component": "^0.1.0-alpha",
         "@bitform/module": "^0.1.0-alpha",
-        "@bitform/routing": "^0.1.0-alpha"
+        "@bitform/provider": "^0.1.0-alpha",
+        "@bitform/routing": "^0.1.0-alpha",
+        "@types/node": "^13.11.0"
     },
     "bundledDependencies": [],
     "engines": {
@@ -25,5 +27,8 @@
     "bugs": {
         "url": "https://github.com/bitmodo/bitform/issues"
     },
-    "homepage": "https://github.com/bitmodo/bitform#readme"
+    "homepage": "https://github.com/bitmodo/bitform#readme",
+    "devDependencies": {
+        "@types/jest": "^25.1.5"
+    }
 }

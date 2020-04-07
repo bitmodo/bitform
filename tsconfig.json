@@ -19,9 +19,6 @@
         "noFallthroughCasesInSwitch": true,
         "forceConsistentCasingInFileNames": true
     },
-    "include": [
-        "packages/**/lib/**/*"
-    ],
     "exclude": [
         "node_modules"
     ]

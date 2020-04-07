@@ -6,11 +6,10 @@
     "files": [
         "dist/**/*"
     ],
-    "dependencies": {},
-    "devDependencies": {},
-    "peerDependencies": {},
+    "dependencies": {
+        "@types/node": "^13.11.0"
+    },
     "bundledDependencies": [],
-    "optionalDependencies": {},
     "engines": {
         "node": ">=10.19.0"
     },
@@ -24,5 +23,8 @@
     "bugs": {
         "url": "https://github.com/bitmodo/bitform/issues"
     },
-    "homepage": "https://github.com/bitmodo/bitform#readme"
+    "homepage": "https://github.com/bitmodo/bitform#readme",
+    "devDependencies": {
+        "@types/jest": "^25.1.5"
+    }
 }
