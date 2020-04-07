@@ -46,3 +46,4 @@ jobs:
           CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_ID }}
         with:
           coverageCommand: gulp coverage
+          coverageLocations: "${{ github.workspace }}/build/coverage/lcov.info:lcov"

@@ -5,7 +5,7 @@ const sourcemap                              = require('gulp-sourcemaps');
 const eslint                                 = require('gulp-eslint');
 const ts                                     = require('gulp-typescript');
 
-const jest                                   = require('@jest/core');
+const jest = require('@jest/core');
 
 const fs   = require('fs');
 const del  = require('del');
@@ -77,22 +77,48 @@ function addLintTask(name) {
     return fn;
 }
 
-function addTestTask(name) {
-    const fn = function () {
-        return jest.runCLI({
-            cache: true,
-            cacheDirectory: `<rootDir>/build/cache/${name}`,
-            displayName: {
+function generateJestFunction(name, coverage) {
+    return function () {
+        return jest.runCLI(Object.assign({
+            cache:           true,
+            cacheDirectory:  '<rootDir>/build/cache' + (name === '*' ? '' : `/${name}`),
+            displayName:     {
                 color: 'blue',
-                name: name,
+                name:  name === '*' ? 'all' : name,
             },
             passWithNoTests: true,
-            reporters: ['<rootDir>/jest-reporter.js'],
-            roots: [`<rootDir>/packages/${name}`],
-            silent: true,
-            testMatch: [`<rootDir>/packages/${name}/test/**/*.ts`],
-        }, ['.']);
+            preset:          'ts-jest',
+            reporters:       [['<rootDir>/jest-reporter.js', { output: !coverage }]],
+            roots:           ['<rootDir>/packages' + (name === '*' ? '' : `/${name}`)],
+            silent:          true,
+            testMatch:       [`<rootDir>/packages/${name}/test/**/*.ts`],
+        }, coverage ? {
+            collectCoverage:     true,
+            collectCoverageFrom: [`<rootDir>/packages/${name}/lib/**/*`],
+            coverage:            true,
+            coverageDirectory:   '<rootDir>/build/coverage' + (name === '*' ? '' : `/${name}`),
+            coverageReporters:   ['json', 'lcov', 'clover'],
+        } : {}), ['.']);
     };
+}
+
+function addTestTask(name) {
+    const fn = generateJestFunction(name, false);
+    // const fn = function () {
+    //     return jest.runCLI({
+    //         cache:           true,
+    //         cacheDirectory:  `<rootDir>/build/cache/${name}`,
+    //         displayName:     {
+    //             color: 'blue',
+    //             name:  name,
+    //         },
+    //         passWithNoTests: true,
+    //         reporters:       ['<rootDir>/jest-reporter.js'],
+    //         roots:           [`<rootDir>/packages/${name}`],
+    //         silent:          true,
+    //         testMatch:       [`<rootDir>/packages/${name}/test/**/*.ts`],
+    //     }, ['.']);
+    // };
 
     let taskName   = `test${capitalize(name)}`;
     fn.name        = taskName;
@@ -105,26 +131,27 @@ function addTestTask(name) {
 }
 
 function addCoverageTask(name) {
-    const fn = function () {
-        return jest.runCLI({
-            cache: true,
-            cacheDirectory: `<rootDir>/build/cache/${name}`,
-            collectCoverage: true,
-            collectCoverageFrom: [`<rootDir>/packages/${name}/lib/**/*`],
-            coverage: true,
-            coverageDirectory: `<rootDir>/build/coverage/${name}`,
-            coverageReporters: ['json', 'lcov', 'clover'],
-            displayName: {
-                color: 'blue',
-                name: name,
-            },
-            passWithNoTests: true,
-            reporters: ['<rootDir>/jest-reporter.js'],
-            roots: [`<rootDir>/packages/${name}`],
-            silent: true,
-            testMatch: [`<rootDir>/packages/${name}/test/**/*.ts`],
-        }, ['.']);
-    };
+    const fn = generateJestFunction(name, true);
+    // const fn = function () {
+    //     return jest.runCLI({
+    //         cache:               true,
+    //         cacheDirectory:      `<rootDir>/build/cache/${name}`,
+    //         collectCoverage:     true,
+    //         collectCoverageFrom: [`<rootDir>/packages/${name}/lib/**/*`],
+    //         coverage:            true,
+    //         coverageDirectory:   `<rootDir>/build/coverage/${name}`,
+    //         coverageReporters:   ['json', 'lcov', 'clover'],
+    //         displayName:         {
+    //             color: 'blue',
+    //             name:  name,
+    //         },
+    //         passWithNoTests:     true,
+    //         reporters:           ['<rootDir>/jest-reporter.js'],
+    //         roots:               [`<rootDir>/packages/${name}`],
+    //         silent:              true,
+    //         testMatch:           [`<rootDir>/packages/${name}/test/**/*.ts`],
+    //     }, ['.']);
+    // };
 
     let taskName   = `coverage${capitalize(name)}`;
     fn.name        = taskName;
@@ -222,13 +249,13 @@ function setupProjects(projects) {
     lintFn.description = 'Lint all of the projects';
     exports.lint       = lintFn;
 
-    const coverageFn       = parallel(projectCoverages);
+    const coverageFn       = generateJestFunction('*', true);
     coverageFn.name        = 'coverage';
     coverageFn.displayName = 'coverage';
     coverageFn.description = 'Get the code coverage for all of the projects';
     exports.coverage       = coverageFn;
 
-    const testFn       = series(projectTests);
+    const testFn       = generateJestFunction('*', false);
     testFn.name        = 'test';
     testFn.displayName = 'test';
     testFn.description = 'Test all of the projects';
