@@ -19,17 +19,60 @@ function capitalize(string) {
     return `${string.substr(0, 1).toUpperCase()}${string.substr(1)}`;
 }
 
+function isValid(project) {
+    let projectDir = path.join(__dirname, 'packages', project);
+
+    return fs.statSync(projectDir).isDirectory()
+           && fs.existsSync(path.join(projectDir, 'tsconfig.json'))
+           && fs.existsSync(path.join(projectDir, 'package.json'));
+}
+
+function generateJestFunction(name, coverage) {
+    return function () {
+        let projects = [];
+        for (let project of fs.readdirSync(path.join(__dirname, 'packages'))) {
+            if (isValid(project)) {
+                projects.push(path.join(__dirname, 'packages', project));
+            }
+        }
+
+        let cacheDir    = path.join(process.cwd(), 'build', 'cache');
+        let coverageDir = path.join(process.cwd(), 'build', 'coverage');
+
+        return jest.runCLI(Object.assign({
+            cache:           true,
+            cacheDirectory:  name === '*' ? cacheDir : path.join(cacheDir, name),
+            displayName:     {
+                color: 'blue',
+                name:  name === '*' ? 'all' : name,
+            },
+            passWithNoTests: true,
+            preset:          'ts-jest',
+            projects:        projects,
+            reporters:       [[path.join(__dirname, 'jest-reporter.js'), { output: !coverage }]],
+            silent:          true,
+            testMatch:       ['<rootDir>/test/**/*.ts'],
+        }, coverage ? {
+            collectCoverage:     true,
+            collectCoverageFrom: ['<rootDir>/lib/**/*'],
+            coverage:            true,
+            coverageDirectory:   name === '*' ? coverageDir : path.join(coverageDir, name),
+            coverageReporters:   ['json', 'lcov', 'clover'],
+        } : {}), projects);
+    };
+}
+
 // Task functions
 
 function addBuildTask(name) {
     const fn = function () {
-        const project = ts.createProject(path.join('packages', name, 'tsconfig.json'));
+        const project = ts.createProject(path.join(__dirname, 'packages', name, 'tsconfig.json'));
 
         return project.src()
                       .pipe(sourcemap.init({ loadMaps: true }))
                       .pipe(project())
                       .pipe(sourcemap.write())
-                      .pipe(dest(path.join('packages', name, 'dist')));
+                      .pipe(dest(path.join(__dirname, 'packages', name, 'dist')));
     };
 
     let taskName   = `build${capitalize(name)}`;
@@ -44,7 +87,7 @@ function addBuildTask(name) {
 
 function addWatchTask(name, build) {
     const fn = function () {
-        return watch(`packages/${name}/lib/**/*`, build);
+        return watch(path.join(__dirname, 'packages', name, 'lib', '**', '*'), build);
     };
 
     let taskName   = `watch${capitalize(name)}`;
@@ -59,7 +102,7 @@ function addWatchTask(name, build) {
 
 function addLintTask(name) {
     const fn = function () {
-        const project = ts.createProject(path.join('packages', name, 'tsconfig.json'));
+        const project = ts.createProject(path.join(__dirname, 'packages', name, 'tsconfig.json'));
 
         return project.src()
                       .pipe(eslint())
@@ -77,48 +120,8 @@ function addLintTask(name) {
     return fn;
 }
 
-function generateJestFunction(name, coverage) {
-    return function () {
-        return jest.runCLI(Object.assign({
-            cache:           true,
-            cacheDirectory:  '<rootDir>/build/cache' + (name === '*' ? '' : `/${name}`),
-            displayName:     {
-                color: 'blue',
-                name:  name === '*' ? 'all' : name,
-            },
-            passWithNoTests: true,
-            preset:          'ts-jest',
-            reporters:       [['<rootDir>/jest-reporter.js', { output: !coverage }]],
-            roots:           ['<rootDir>/packages' + (name === '*' ? '' : `/${name}`)],
-            silent:          true,
-            testMatch:       [`<rootDir>/packages/${name}/test/**/*.ts`],
-        }, coverage ? {
-            collectCoverage:     true,
-            collectCoverageFrom: [`<rootDir>/packages/${name}/lib/**/*`],
-            coverage:            true,
-            coverageDirectory:   '<rootDir>/build/coverage' + (name === '*' ? '' : `/${name}`),
-            coverageReporters:   ['json', 'lcov', 'clover'],
-        } : {}), ['.']);
-    };
-}
-
 function addTestTask(name) {
     const fn = generateJestFunction(name, false);
-    // const fn = function () {
-    //     return jest.runCLI({
-    //         cache:           true,
-    //         cacheDirectory:  `<rootDir>/build/cache/${name}`,
-    //         displayName:     {
-    //             color: 'blue',
-    //             name:  name,
-    //         },
-    //         passWithNoTests: true,
-    //         reporters:       ['<rootDir>/jest-reporter.js'],
-    //         roots:           [`<rootDir>/packages/${name}`],
-    //         silent:          true,
-    //         testMatch:       [`<rootDir>/packages/${name}/test/**/*.ts`],
-    //     }, ['.']);
-    // };
 
     let taskName   = `test${capitalize(name)}`;
     fn.name        = taskName;
@@ -132,26 +135,6 @@ function addTestTask(name) {
 
 function addCoverageTask(name) {
     const fn = generateJestFunction(name, true);
-    // const fn = function () {
-    //     return jest.runCLI({
-    //         cache:               true,
-    //         cacheDirectory:      `<rootDir>/build/cache/${name}`,
-    //         collectCoverage:     true,
-    //         collectCoverageFrom: [`<rootDir>/packages/${name}/lib/**/*`],
-    //         coverage:            true,
-    //         coverageDirectory:   `<rootDir>/build/coverage/${name}`,
-    //         coverageReporters:   ['json', 'lcov', 'clover'],
-    //         displayName:         {
-    //             color: 'blue',
-    //             name:  name,
-    //         },
-    //         passWithNoTests:     true,
-    //         reporters:           ['<rootDir>/jest-reporter.js'],
-    //         roots:               [`<rootDir>/packages/${name}`],
-    //         silent:              true,
-    //         testMatch:           [`<rootDir>/packages/${name}/test/**/*.ts`],
-    //     }, ['.']);
-    // };
 
     let taskName   = `coverage${capitalize(name)}`;
     fn.name        = taskName;
@@ -166,9 +149,9 @@ function addCoverageTask(name) {
 function addCleanTask(name) {
     const fn = function () {
         return parallel(
-            del(path.join('packages', name, 'dist')),
-            del(path.join('build', 'cache', name)),
-            del(path.join('build', 'coverage', name)),
+            del(path.join(__dirname, 'packages', name, 'dist')),
+            del(path.join(process.cwd(), 'build', 'cache', name)),
+            del(path.join(process.cwd(), 'build', 'coverage', name)),
         );
     };
 
@@ -288,8 +271,8 @@ function deepCheck(projects, project) {
 
 let projects = [['util'], ['component', 'provider', 'routing-path'], ['component-parser', 'component-renderer', 'layout', 'routing'], ['page'], ['module']];
 let extras   = [];
-for (let project of fs.readdirSync('packages')) {
-    if (fs.statSync(path.join('packages', project)).isDirectory() && fs.existsSync(path.join('packages', project, 'tsconfig.json'))) {
+for (let project of fs.readdirSync(path.join(__dirname, 'packages'))) {
+    if (isValid(project)) {
         if (!deepCheck(projects, project))
             extras.push(project);
     }
