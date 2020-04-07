@@ -7,7 +7,7 @@
 [![Code quality](https://img.shields.io/codeclimate/maintainability/bitmodo/bitform?label=code%20quality&logo=code-climate)](https://codeclimate.com/github/bitmodo/bitform)
 
 <p align="center">
-    <a href="https://github.com/bitmodo/bitform/blob/master/doc/readme.md">Docs</a>
+    <a href="https://github.com/bitmodo/bitform/blob/develop/doc/readme.md">Docs</a>
 </p>
 
 Bitform is a framework for Node.js designed make creating websites quickly and easily.
