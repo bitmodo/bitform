@@ -1,5 +1,8 @@
 import { Attribute, Node, Component } from '@bitform/component';
 
+/**
+ * 
+ */
 export interface TextConfig {
     tag?: string,
     id?: string,
@@ -12,6 +15,9 @@ const defaultConfig: TextConfig = {
     classes: undefined,
 };
 
+/**
+ *
+ */
 export class Text extends Component {
     #text: string;
 
