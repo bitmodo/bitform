@@ -67,7 +67,7 @@ This means that they need to take everything into account when defining an endpo
 It also means that they are responsible for setting up API routes, i.e. RESTful routes.
 
 Page [layouts](#layouts) and [components](#components) are the building blocks of pages.
-They are entilely what define the content.
+They are entirely what define the content.
 A page is essentially just a stub for a route which returns the content comprised of [layouts](#layouts) and [components](#components).
 
 ##### Layouts
@@ -186,7 +186,7 @@ This dashboard should allow for anything the administrator might want to do, whi
 
 This module should follow the recommendations set for pages, by being as extensible as possible.
 All the included pages, layouts, and components should be able to be swapped and configured with ease.
-All the components on the login/register pages, dashboard pages, etc. should be extensible and exchangable with other components.
+All the components on the login/register pages, dashboard pages, etc. should be extensible and exchangeable with other components.
 This means that other modules should be able to add components to these pages without actually being included in the module.
 
 #### Configuration Module
@@ -232,7 +232,7 @@ A simple wiki module.
 This should be initially modeled to provide a wiki for software projects, but be adaptable for any type of wiki content.
 The experience should be consistent with the rest of the website and provide an interface that looks and feels similar to existing wiki software.
 
-A look and feel similar to the [blog module](#blog-module) should be incorparated into this module.
+A look and feel similar to the [blog module](#blog-module) should be incorporated into this module.
 That includes both the editor and the final display of the page.
 
 #### Documentation Module
@@ -283,7 +283,7 @@ The API should be made as extensible as possible to allow any type of functional
 Any type of item should be able to be purchased from this type of store.
 That means that physical items should be able to be purchased, notifying the seller that an order has been made.
 It also means that digital items should be able to be purchased, handling whatever logic must go into delivering the product to the buyer.
-On top of that, those two shouldn't be the only types of products that can be purched.
+On top of that, those two shouldn't be the only types of products that can be purchased.
 The API should allow for other types of products to be purchased as well.
 
 Given that this API deals with money, it must be extremely secure.
@@ -299,7 +299,7 @@ The idea is that we provide Bitform completely open source and free of charge.
 We then offer a paid option to host websites on our own servers and provide official support with any issues for a small fee.
 
 Following this model, we can provide a free and open source product while still receiving a stream of revenue to fund the continued development of the product.
-According to [Ghost](https://ghost.org/changelog/3-0/), they have made $5,000,000 in revenue whilest maintaining 100% ownership of their business.
+According to [Ghost](https://ghost.org/changelog/3-0/), they have made $5,000,000 in revenue whilst maintaining 100% ownership of their business.
 The goal is to follow this model, at least in the beginning.
 
 By offering Bitform Cloud, we can receive revenue for Bitform without having to make it closed source or making Bitform itself paid.
