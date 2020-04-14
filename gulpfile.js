@@ -271,6 +271,8 @@ function deepCheck(projects, project) {
 
 let projects = [
     ['util'],
+    ['configuration', 'storage', 'user', 'user-management'],
+    ['blog', 'documentation', 'forum', 'store', 'wiki'],
     ['component', 'provider', 'request', 'response', 'routing-path'],
     ['component-parser', 'component-renderer', 'layout', 'routing'],
     ['component-html-renderer', 'page'],
