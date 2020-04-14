@@ -1,7 +1,7 @@
 import { Attribute, Node, Component } from '@bitform/component';
 
 /**
- * 
+ *
  */
 export interface TextConfig {
     tag?: string,

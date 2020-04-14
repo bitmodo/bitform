@@ -1,15 +1,14 @@
 {
-    "name": "@bitform/routing",
-    "description": "The routing API for Bitform",
+    "name": "@bitform/component-html-renderer",
+    "description": "The HTML renderer for Bitform components",
     "version": "0.1.0-alpha",
     "main": "dist/index.js",
     "files": [
         "dist/**/*"
     ],
     "dependencies": {
-        "@bitform/request": "^0.1.0-alpha",
-        "@bitform/response": "^0.1.0-alpha",
-        "@bitform/routing-path": "^0.1.0-alpha",
+        "@bitform/component": "^0.1.0-alpha",
+        "@bitform/component-renderer": "^0.1.0-alpha",
         "@types/node": "^13.11.0"
     },
     "bundledDependencies": [],

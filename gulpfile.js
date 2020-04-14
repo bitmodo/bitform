@@ -87,7 +87,7 @@ function addBuildTask(name) {
 
 function addWatchTask(name, build) {
     const fn = function () {
-        return watch(path.join(__dirname, 'packages', name, 'lib', '**', '*'), build);
+        return watch(path.join(__dirname, 'packages', name, 'lib', '**', '*').replace(/\\/g, '/'), build);
     };
 
     let taskName   = `watch${capitalize(name)}`;
@@ -269,8 +269,15 @@ function deepCheck(projects, project) {
     return false;
 }
 
-let projects = [['util'], ['component', 'provider', 'routing-path'], ['component-parser', 'component-renderer', 'layout', 'routing'], ['page'], ['module']];
-let extras   = [];
+let projects = [
+    ['util'],
+    ['component', 'provider', 'request', 'response', 'routing-path'],
+    ['component-parser', 'component-renderer', 'layout', 'routing'],
+    ['component-html-renderer', 'page'],
+    ['module'],
+];
+
+let extras = [];
 for (let project of fs.readdirSync(path.join(__dirname, 'packages'))) {
     if (isValid(project)) {
         if (!deepCheck(projects, project))
