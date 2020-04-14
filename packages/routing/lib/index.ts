@@ -1,5 +1,5 @@
 import { Request }           from '@bitform/request';
-import { Response }          from '@bitform/Response';
+import { Response }          from '@bitform/response';
 import { Path as RoutePath } from '@bitform/routing-path';
 
 /**
