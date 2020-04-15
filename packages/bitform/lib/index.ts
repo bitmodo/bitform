@@ -4,6 +4,7 @@ import { Provider } from '@bitform/provider';
 /**
  *
  */
+// tslint:disable-next-line:no-empty-interface
 export interface Config {
 
 }
@@ -20,7 +21,7 @@ export class Bitform {
     #modules: Module[] = [];
 
     public constructor(config?: Config) {
-        this.#config = Object.assign(this.#config, config || defaultConfig);
+        this.#config = {...this.#config, ...(config || defaultConfig)};
     }
 
     public get provider(): Provider | undefined {
@@ -41,6 +42,7 @@ export class Bitform {
         return this;
     }
 
+    // tslint:disable-next-line:no-empty
     public run(): void {
 
     }

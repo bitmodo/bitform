@@ -10,7 +10,7 @@ class RenderDataIterator implements Iterator<Component> {
 
     next(): IteratorResult<Component> {
         const value = this.#components[this.#position++];
-        return {done: this.#position == this.#components.length, value: value};
+        return {done: this.#position === this.#components.length, value: value};
     }
 }
 
@@ -37,7 +37,7 @@ export class RenderData implements Iterable<Component> {
     }
 
     public add(...components: (Component | Component[])[]): void {
-        for (let component of components) {
+        for (const component of components) {
             if (Array.isArray(component)) {
                 this.add(component);
             } else {

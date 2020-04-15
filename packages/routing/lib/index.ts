@@ -50,7 +50,7 @@ export abstract class Route {
     }
 
     public set callbacks(callbacks: Callbacks) {
-        this.#callbacks = Object.assign(this.#callbacks, callbacks);
+        this.#callbacks = {...this.#callbacks, ...callbacks};
     }
 
     public add(method: Method, callback: Callback): this {

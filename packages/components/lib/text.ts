@@ -4,9 +4,9 @@ import { Attribute, Node, Component } from '@bitform/component';
  *
  */
 export interface TextConfig {
-    tag?: string,
-    id?: string,
-    classes?: string | string[],
+    tag?: string;
+    id?: string;
+    classes?: string | string[];
 }
 
 const defaultConfig: TextConfig = {
@@ -30,7 +30,7 @@ export class Text extends Component {
 
         this.#text = text;
 
-        config = Object.assign(config, defaultConfig);
+        config = {...config, ...defaultConfig};
 
         this.#tag     = config?.tag || 'span';
         this.#id      = config?.id;
@@ -70,7 +70,7 @@ export class Text extends Component {
     }
 
     get nodes(): Node[] {
-        let text: Node = new Node(this.tag);
+        const text: Node = new Node(this.tag);
 
         if (this.id) {
             text.add(new Attribute('id', this.id));

@@ -24,7 +24,7 @@ export class Container extends GenericComponentGroup {
     public constructor(config?: ContainerConfig, items?: IComponent[]) {
         super(items);
 
-        this.#config = Object.assign(this.#config, config || {});
+        this.#config = {...this.#config, ...(config || {})};
     }
 
     public get tag(): string {
@@ -40,7 +40,7 @@ export class Container extends GenericComponentGroup {
     }
 
     public get nodes(): Node[] {
-        let container: Node = new Node(this.tag);
+        const container: Node = new Node(this.tag);
 
         if (this.id) {
             container.add(new Attribute('id', this.id));
@@ -55,7 +55,7 @@ export class Container extends GenericComponentGroup {
             container.add(new Attribute('class', classes));
         }
 
-        for (let item of this.items) {
+        for (const item of this.items) {
             container.add(item.nodes);
         }
 

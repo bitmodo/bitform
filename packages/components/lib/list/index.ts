@@ -26,7 +26,7 @@ export abstract class List extends GenericComponentGroup {
         super(items);
 
         this.#tag    = tag;
-        this.#config = Object.assign(this.#config, config || {});
+        this.#config = {...this.#config, ...(config || {})};
     }
 
     public get tag(): string {
@@ -46,7 +46,7 @@ export abstract class List extends GenericComponentGroup {
     }
 
     public get nodes(): Node[] {
-        let list: Node = new Node(this.tag);
+        const list: Node = new Node(this.tag);
 
         if (this.id) {
             list.add(new Attribute('id', this.id));
@@ -61,8 +61,8 @@ export abstract class List extends GenericComponentGroup {
             list.add(new Attribute('class', classes));
         }
 
-        for (let item of this.items) {
-            let li: Node = new Node('li');
+        for (const item of this.items) {
+            const li: Node = new Node('li');
 
             if (this.itemClasses) {
                 let classes = this.itemClasses;

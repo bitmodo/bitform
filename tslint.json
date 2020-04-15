@@ -2,7 +2,6 @@
     "extends": "tslint:recommended",
     "rules": {
         "adjacent-overload-signatures": true,
-        "member-access": [true, "check-accessor", "check-constructor", "check-parameter-property"],
         "member-ordering": [true, {"order": "fields-first"}],
         "no-for-in": true,
         "no-var-requires": true,
@@ -10,7 +9,6 @@
         "unified-signatures": true,
 
         "await-promise": true,
-        "curly": [true, "as-needed"],
         "function-constructor": true,
         "no-arg": true,
         "no-construct": true,
@@ -49,6 +47,7 @@
         "cyclomatic-complexity": [true, 20],
         "deprecation": true,
         "invalid-void": true,
+        "max-classes-per-file": false,
         "no-default-import": true,
         "no-duplicate-imports": true,
         "no-mergeable-namespace": true,
@@ -67,6 +66,7 @@
         "no-unnecessary-initializer": true,
         "no-unnecessary-qualifier": true,
         "object-literal-key-quotes": [true, "as-needed"],
+        "object-literal-shorthand": false,
         "prefer-method-signature": true,
         "prefer-switch": true,
         "prefer-template": [true, "allow-single-concat"],
@@ -78,7 +78,7 @@
 
         "align": [true, "parameters", "arguments", "statements", "members", "elements"],
         "eofline": true,
-        "import-spacing": true,
+        "import-spacing": false,
         "indent": [true, "spaces", 4],
         "linebreak-style": [true, "LF"],
         "new-parens": true,

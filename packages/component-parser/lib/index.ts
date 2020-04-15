@@ -11,6 +11,12 @@ export abstract class Parser {
     #parsed: boolean = false;
     #components: Component[] = [];
 
+    public get components(): Component[] {
+        this._parse();
+
+        return this.#components;
+    }
+
     public abstract parse(): void;
 
     private _parse(): void {
@@ -18,12 +24,6 @@ export abstract class Parser {
 
         this.parse();
         this.#parsed = true;
-    }
-
-    public get components(): Component[] {
-        this._parse();
-
-        return this.#components;
     }
 }
 

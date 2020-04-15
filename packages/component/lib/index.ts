@@ -48,7 +48,7 @@ export type NodeChild = Node | string;
 export class Node {
     #tag: string;
     #attributes: Attribute[];
-    #children: NodeChild[]
+    #children: NodeChild[];
 
     public constructor(tag: string, attributes: Attribute[] = [], children: NodeChild[] = []) {
         this.#tag        = tag;
@@ -82,7 +82,7 @@ export class Node {
 
     public add(item: (Attribute | NodeChild) | (Attribute | NodeChild)[]): this {
         if (Array.isArray(item)) {
-            for (let element of item) {
+            for (const element of item) {
                 this.add(element);
             }
         } else {
@@ -97,7 +97,7 @@ export class Node {
     }
 
     public getAttribute(name: string): Attribute | undefined {
-        for (let attribute of this.#attributes) {
+        for (const attribute of this.#attributes) {
             if (attribute.name === name)
                 return attribute;
         }
@@ -106,7 +106,7 @@ export class Node {
     }
 
     public contains(item: Attribute): boolean {
-        for (let attribute of this.#attributes) {
+        for (const attribute of this.#attributes) {
             if (attribute.name === item.name)
                 return true;
         }
@@ -180,7 +180,7 @@ export abstract class AbstractComponentGroup<T extends IComponent> extends Compo
     }
 
     public add(...items: (T | T[])[]): this {
-        for (let item of items) {
+        for (const item of items) {
             if (Array.isArray(item)) {
                 this.add(item);
             } else {

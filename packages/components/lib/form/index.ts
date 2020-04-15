@@ -29,11 +29,11 @@ export class Form extends ComponentGroup<FormItem> {
     public constructor(config?: FormConfig, items?: FormItem[]) {
         super(items);
 
-        this.#config = Object.assign(this.#config, config || {});
+        this.#config = {...this.#config, ...(config || {})};
     }
 
     get nodes(): Node[] {
-        let form = new Node('form');
+        const form = new Node('form');
 
         let formClass = this.#config.class;
         if (formClass) {
@@ -44,7 +44,7 @@ export class Form extends ComponentGroup<FormItem> {
             form.add(new Attribute('class', formClass));
         }
 
-        for (let item of this.items) {
+        for (const item of this.items) {
             form.add(this.item(item));
         }
 
@@ -52,9 +52,9 @@ export class Form extends ComponentGroup<FormItem> {
     }
 
     private item(item: FormItem): Node {
-        let div      = new Node('div');
-        let labelDiv = this.labelDiv(item);
-        let inputDiv = this.inputDiv(item);
+        const div      = new Node('div');
+        const labelDiv = this.labelDiv(item);
+        const inputDiv = this.inputDiv(item);
 
         if (labelDiv) div.add(labelDiv);
         div.add(inputDiv);
@@ -65,7 +65,7 @@ export class Form extends ComponentGroup<FormItem> {
     private labelDiv(item: FormItem): Node | undefined {
         if (!item.name) return undefined;
 
-        let labelDiv = new Node('div');
+        const labelDiv = new Node('div');
 
         let labelDivClass = this.#config.labelDivClass;
         if (labelDivClass) {
@@ -76,14 +76,14 @@ export class Form extends ComponentGroup<FormItem> {
             labelDiv.add(new Attribute('class', labelDivClass));
         }
 
-        let label = this.label(item.name);
+        const label = this.label(item.name);
         labelDiv.add(label);
 
         return labelDiv;
     }
 
     private label(name: string): Node {
-        let label = new Node('label');
+        const label = new Node('label');
 
         let labelClass = this.#config.labelClass;
         if (labelClass) {
@@ -100,7 +100,7 @@ export class Form extends ComponentGroup<FormItem> {
     }
 
     private inputDiv(item: FormItem): Node {
-        let inputDiv = new Node('div');
+        const inputDiv = new Node('div');
 
         let inputDivClass = this.#config.inputDivClass;
         if (inputDivClass) {
@@ -111,14 +111,14 @@ export class Form extends ComponentGroup<FormItem> {
             inputDiv.add(new Attribute('class', inputDivClass));
         }
 
-        let input = this.input(item);
+        const input = this.input(item);
         inputDiv.add(input);
 
         return inputDiv;
     }
 
     private input(item: FormItem): Node[] {
-        let inputs = item.nodes;
+        const inputs = item.nodes;
 
         let inputClass = this.#config.inputClass;
         if (inputClass) {
@@ -126,8 +126,8 @@ export class Form extends ComponentGroup<FormItem> {
                 inputClass = inputClass.join(' ');
             }
 
-            for (let input of inputs) {
-                let classes = input.getAttribute('class');
+            for (const input of inputs) {
+                const classes = input.getAttribute('class');
                 if (classes) {
                     classes.value += ` ${inputClass}`;
                 } else {

@@ -6,10 +6,10 @@ import { Renderer, RenderData, Render } from '@bitform/component-renderer';
  */
 export class HTMLRenderer extends Renderer {
     public render(data: RenderData): Render {
-        let render: string[] = [];
+        const render: string[] = [];
 
-        for (let component of data) {
-            for (let node of component.nodes) {
+        for (const component of data) {
+            for (const node of component.nodes) {
                 render.push(this.renderNode(node));
             }
         }
@@ -23,7 +23,7 @@ export class HTMLRenderer extends Renderer {
         str += `<${node.tag}`;
 
         if (node.attributes.length > 0) {
-            for (let attribute of node.attributes) {
+            for (const attribute of node.attributes) {
                 str += ` ${attribute.name}=${this.attributeValueString(attribute)}`;
             }
 
@@ -35,7 +35,7 @@ export class HTMLRenderer extends Renderer {
         } else {
             str += '>';
 
-            for (let child of node.children) {
+            for (const child of node.children) {
                 if (child instanceof Node) {
                     str += this.renderNode(child);
                 } else {
