@@ -1,12 +1,22 @@
 // @ts-nocheck
 
+// Gulp functions
 const { src, dest, parallel, series, watch } = require('gulp');
-const sourcemap                              = require('gulp-sourcemaps');
-const eslint                                 = require('gulp-eslint');
-const ts                                     = require('gulp-typescript');
 
-const jest = require('@jest/core');
+// Utility Gulp modules
+const through = require('through2');
 
+// Compilation Gulp plugins
+const sourcemap = require('gulp-sourcemaps');
+const ts        = require('gulp-typescript');
+const terser    = require('gulp-terser');
+
+// Check Gulp plugins
+const mocha  = require('gulp-mocha');
+const tslint = require('gulp-tslint');
+const { Linter } = require('tslint');
+
+// Utility modules
 const fs   = require('fs');
 const del  = require('del');
 const path = require('path');
@@ -27,40 +37,58 @@ function isValid(project) {
            && fs.existsSync(path.join(projectDir, 'package.json'));
 }
 
-function generateJestFunction(name, coverage) {
+function generateMochaFunction(name) {
     return function () {
-        let projects = [];
-        for (let project of fs.readdirSync(path.join(__dirname, 'packages'))) {
-            if (isValid(project)) {
-                projects.push(path.join(__dirname, 'packages', project));
-            }
-        }
-
-        let cacheDir    = path.join(process.cwd(), 'build', 'cache');
-        let coverageDir = path.join(process.cwd(), 'build', 'coverage');
-
-        return jest.runCLI(Object.assign({
-            cache:           true,
-            cacheDirectory:  name === '*' ? cacheDir : path.join(cacheDir, name),
-            displayName:     {
-                color: 'blue',
-                name:  name === '*' ? 'all' : name,
-            },
-            passWithNoTests: true,
-            preset:          'ts-jest',
-            projects:        projects,
-            reporters:       [[path.join(__dirname, 'jest-reporter.js'), { output: !coverage }]],
-            silent:          true,
-            testMatch:       ['<rootDir>/test/**/*.ts'],
-        }, coverage ? {
-            collectCoverage:     true,
-            collectCoverageFrom: ['<rootDir>/lib/**/*'],
-            coverage:            true,
-            coverageDirectory:   name === '*' ? coverageDir : path.join(coverageDir, name),
-            coverageReporters:   ['json', 'lcov', 'clover'],
-        } : {}), projects);
+        return src(`${__dirname}/packages/${name}/test/**/*.ts`)
+            .pipe(mocha({
+                ui: 'bdd',
+                checkLeaks: true,
+                require: ['ts-node/register'],
+                reporter: 'min',
+            }));
     };
 }
+
+function generateNycFunction(name) {
+    return function(cb) {
+        cb();
+    };
+}
+
+// function generateJestFunction(name, coverage) {
+//     return function () {
+//         let projects = [];
+//         for (let project of fs.readdirSync(path.join(__dirname, 'packages'))) {
+//             if (isValid(project)) {
+//                 projects.push(path.join(__dirname, 'packages', project));
+//             }
+//         }
+//
+//         let cacheDir    = path.join(process.cwd(), 'build', 'cache');
+//         let coverageDir = path.join(process.cwd(), 'build', 'coverage');
+//
+//         return jest.runCLI(Object.assign({
+//             cache:           true,
+//             cacheDirectory:  name === '*' ? cacheDir : path.join(cacheDir, name),
+//             displayName:     {
+//                 color: 'blue',
+//                 name:  name === '*' ? 'all' : name,
+//             },
+//             passWithNoTests: true,
+//             preset:          'ts-jest',
+//             projects:        projects,
+//             reporters:       [[path.join(__dirname, 'jest-reporter.js'), { output: !coverage }]],
+//             silent:          true,
+//             testMatch:       ['<rootDir>/test/**/*.ts'],
+//         }, coverage ? {
+//             collectCoverage:     true,
+//             collectCoverageFrom: ['<rootDir>/lib/**/*'],
+//             coverage:            true,
+//             coverageDirectory:   name === '*' ? coverageDir : path.join(coverageDir, name),
+//             coverageReporters:   ['json', 'lcov', 'clover'],
+//         } : {}), projects);
+//     };
+// }
 
 // Task functions
 
@@ -71,6 +99,17 @@ function addBuildTask(name) {
         return project.src()
                       .pipe(sourcemap.init({ loadMaps: true }))
                       .pipe(project())
+                      .pipe(terser({
+                          compress: {
+                              ecma:   2018,
+                              module: true,
+                          },
+                          mangle:   {
+                              module: true,
+                          },
+                          ecma:     2018,
+                          module:   true,
+                      }))
                       .pipe(sourcemap.write())
                       .pipe(dest(path.join(__dirname, 'packages', name, 'dist')));
     };
@@ -87,7 +126,7 @@ function addBuildTask(name) {
 
 function addWatchTask(name, build) {
     const fn = function () {
-        return watch(path.join(__dirname, 'packages', name, 'lib', '**', '*').replace(/\\/g, '/'), build);
+        return watch(`${__dirname}/packages/${name}/lib/**/*`, build);
     };
 
     let taskName   = `watch${capitalize(name)}`;
@@ -102,12 +141,21 @@ function addWatchTask(name, build) {
 
 function addLintTask(name) {
     const fn = function () {
+        const projectDir = path.join(__dirname, 'packages', name);
+        const configPath = path.join(projectDir, 'tsconfig.json');
+
+        const program = Linter.createProgram(configPath, projectDir);
         const project = ts.createProject(path.join(__dirname, 'packages', name, 'tsconfig.json'));
 
         return project.src()
-                      .pipe(eslint())
-                      .pipe(eslint.format())
-                      .pipe(eslint.failAfterError());
+                      .pipe(tslint({
+                          fix: false,
+                          configuration: path.join(__dirname, 'tslint.json'),
+                          program: program,
+                      }))
+                      .pipe(tslint.report({
+                          allowWarnings: true,
+                      }));
     };
 
     let taskName   = `lint${capitalize(name)}`;
@@ -121,7 +169,7 @@ function addLintTask(name) {
 }
 
 function addTestTask(name) {
-    const fn = generateJestFunction(name, false);
+    const fn = generateMochaFunction(name);
 
     let taskName   = `test${capitalize(name)}`;
     fn.name        = taskName;
@@ -134,7 +182,7 @@ function addTestTask(name) {
 }
 
 function addCoverageTask(name) {
-    const fn = generateJestFunction(name, true);
+    const fn = generateNycFunction(name);
 
     let taskName   = `coverage${capitalize(name)}`;
     fn.name        = taskName;
@@ -232,17 +280,17 @@ function setupProjects(projects) {
     lintFn.description = 'Lint all of the projects';
     exports.lint       = lintFn;
 
-    const coverageFn       = generateJestFunction('*', true);
-    coverageFn.name        = 'coverage';
-    coverageFn.displayName = 'coverage';
-    coverageFn.description = 'Get the code coverage for all of the projects';
-    exports.coverage       = coverageFn;
-
-    const testFn       = generateJestFunction('*', false);
+    const testFn       = generateMochaFunction('*');
     testFn.name        = 'test';
     testFn.displayName = 'test';
     testFn.description = 'Test all of the projects';
     exports.test       = testFn;
+
+    const coverageFn       = generateNycFunction('*');
+    coverageFn.name        = 'coverage';
+    coverageFn.displayName = 'coverage';
+    coverageFn.description = 'Get the code coverage for all of the projects';
+    exports.coverage       = coverageFn;
 
     const cleanFn       = parallel(projectCleans);
     cleanFn.name        = 'clean';

@@ -1,7 +1,9 @@
+import { expect } from 'chai';
+
 it('pass', () => {
-    expect(true).toBeTruthy();
+    expect(true).to.be.true;
 });
 
 it('fail', () => {
-    expect(false).toBeTruthy();
+    expect(false).to.be.true;
 });
