@@ -12,8 +12,6 @@
         "strictNullChecks": true,
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true,
-        "inlineSourceMap": true,
-        "inlineSources": true,
         "noUnusedLocals": true,
         "noImplicitReturns": true,
         "noFallthroughCasesInSwitch": true,

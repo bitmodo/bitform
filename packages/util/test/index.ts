@@ -5,5 +5,5 @@ it('pass', () => {
 });
 
 it('fail', () => {
-    expect(false).to.be.true;
+    expect(false).to.be.false;
 });

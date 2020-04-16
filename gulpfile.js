@@ -1,10 +1,11 @@
 // @ts-nocheck
 
 // Gulp functions
-const { src, dest, parallel, series, watch } = require('gulp');
+const { src, dest, parallel, series, watch, lastRun } = require('gulp');
 
 // Utility Gulp modules
-const through = require('through2');
+// const through = require('through2');
+const gulpIf = require('gulp-if');
 
 // Compilation Gulp plugins
 const sourcemap = require('gulp-sourcemaps');
@@ -12,14 +13,19 @@ const ts        = require('gulp-typescript');
 const terser    = require('gulp-terser');
 
 // Check Gulp plugins
-const mocha  = require('gulp-mocha');
-const tslint = require('gulp-tslint');
+const mocha      = require('gulp-mocha');
+// const { NYC }    = require('nyc');
+const tslint     = require('gulp-tslint');
 const { Linter } = require('tslint');
 
 // Utility modules
-const fs   = require('fs');
-const del  = require('del');
-const path = require('path');
+const fs       = require('fs');
+const del      = require('del');
+const path     = require('path');
+const { fork } = require('child_process');
+
+// Settings
+const paths = require('./paths');
 
 /**
  * @param {string} string
@@ -30,93 +36,108 @@ function capitalize(string) {
 }
 
 function isValid(project) {
-    let projectDir = path.join(__dirname, 'packages', project);
+    return fs.statSync(paths.project(project)).isDirectory()
+           && fs.existsSync(paths.tsconfig(project))
+           && fs.existsSync(paths.packageJson(project));
+}
 
-    return fs.statSync(projectDir).isDirectory()
-           && fs.existsSync(path.join(projectDir, 'tsconfig.json'))
-           && fs.existsSync(path.join(projectDir, 'package.json'));
+function toArgs(flag, array) {
+    let args = [];
+    for (let element of array) {
+        args.push(`${flag}=${element}`);
+    }
+
+    return args;
+}
+
+function isJavaScript(file) {
+    return file.extname === '.js';
 }
 
 function generateMochaFunction(name) {
     return function () {
-        return src(`${__dirname}/packages/${name}/test/**/*.ts`)
-            .pipe(mocha({
-                ui: 'bdd',
-                checkLeaks: true,
-                require: ['ts-node/register'],
-                reporter: 'min',
-            }));
+        return src(paths.testGlob(name))
+            .pipe(mocha());
     };
 }
 
 function generateNycFunction(name) {
-    return function(cb) {
-        cb();
+    return function (cb) {
+        let nycBin   = path.join(require.resolve('nyc'), '..', require('nyc/package.json').bin.nyc);
+        let mochaBin = path.join(require.resolve('mocha'), '..', 'bin', 'mocha');
+
+        let nycArgs = [
+            '--all',
+            '--cache',
+            `--include='${name === '*' ? paths.relativeAllLibGlob : paths.relativeLibGlob(name)}'`,
+            '--reporter=clover', '--reporter=lcov', '--reporter=text-summary',
+            `--report-dir='${name === '*' ? paths.coveragePath : paths.coverage(name)}'`,
+            `--cache-dir='${name === '*' ? paths.cachePath : paths.cache(name)}'`,
+            `--temp-dir='${paths.buildPath}'`,
+            `--cwd='${paths.root}'`,
+            '--require=ts-node/register',
+        ];
+        let args    = [`${mochaBin}`, `'${name === '*' ? paths.allTestGlob : paths.testGlob(name)}'`];
+
+        let child = fork(nycBin, nycArgs.concat(args), {
+            cwd:      paths.cwd,
+            detached: false,
+            env:      {
+                ...process.env,
+                TS_NODE_PROJECT: path.join(paths.root, 'tsconfig.base.json'),
+            },
+        });
+
+        child.on('error', (e) => {
+            cb(e);
+        });
+
+        child.on('close', (code) => {
+            if (code) {
+                cb(new Error('Error running code coverage'));
+            } else {
+                cb();
+            }
+        });
     };
 }
-
-// function generateJestFunction(name, coverage) {
-//     return function () {
-//         let projects = [];
-//         for (let project of fs.readdirSync(path.join(__dirname, 'packages'))) {
-//             if (isValid(project)) {
-//                 projects.push(path.join(__dirname, 'packages', project));
-//             }
-//         }
-//
-//         let cacheDir    = path.join(process.cwd(), 'build', 'cache');
-//         let coverageDir = path.join(process.cwd(), 'build', 'coverage');
-//
-//         return jest.runCLI(Object.assign({
-//             cache:           true,
-//             cacheDirectory:  name === '*' ? cacheDir : path.join(cacheDir, name),
-//             displayName:     {
-//                 color: 'blue',
-//                 name:  name === '*' ? 'all' : name,
-//             },
-//             passWithNoTests: true,
-//             preset:          'ts-jest',
-//             projects:        projects,
-//             reporters:       [[path.join(__dirname, 'jest-reporter.js'), { output: !coverage }]],
-//             silent:          true,
-//             testMatch:       ['<rootDir>/test/**/*.ts'],
-//         }, coverage ? {
-//             collectCoverage:     true,
-//             collectCoverageFrom: ['<rootDir>/lib/**/*'],
-//             coverage:            true,
-//             coverageDirectory:   name === '*' ? coverageDir : path.join(coverageDir, name),
-//             coverageReporters:   ['json', 'lcov', 'clover'],
-//         } : {}), projects);
-//     };
-// }
 
 // Task functions
 
 function addBuildTask(name) {
-    const fn = function () {
-        const project = ts.createProject(path.join(__dirname, 'packages', name, 'tsconfig.json'));
+    const displayName = `build:${name}`;
 
-        return project.src()
-                      .pipe(sourcemap.init({ loadMaps: true }))
-                      .pipe(project())
-                      .pipe(terser({
-                          compress: {
-                              ecma:   2018,
-                              module: true,
-                          },
-                          mangle:   {
-                              module: true,
-                          },
-                          ecma:     2018,
-                          module:   true,
-                      }))
-                      .pipe(sourcemap.write())
-                      .pipe(dest(path.join(__dirname, 'packages', name, 'dist')));
+    const fn = function () {
+        const project = ts.createProject(paths.tsconfig(name));
+
+        return src(paths.libGlob(name), { since: lastRun(displayName) })
+            .pipe(sourcemap.init({ loadMaps: true }))
+            .pipe(project())
+            .pipe(gulpIf(isJavaScript, terser({
+                compress: {
+                    ecma:   2018,
+                    module: true,
+                },
+                mangle:   {
+                    module: true,
+                },
+                ecma:     2018,
+                module:   true,
+            })))
+            .pipe(gulpIf(isJavaScript, sourcemap.mapSources(function (sourcePath, file) {
+                if (sourcePath.endsWith('.ts')) {
+                    return path.join(path.relative(file.dirname, paths.libRoot(name)), path.relative(paths.dist(name), file.dirname), path.basename(sourcePath));
+                }
+
+                return sourcePath;
+            })))
+            .pipe(gulpIf(isJavaScript, sourcemap.write('.')))
+            .pipe(dest(paths.dist(name)));
     };
 
     let taskName   = `build${capitalize(name)}`;
     fn.name        = taskName;
-    fn.displayName = `build:${name}`;
+    fn.displayName = displayName;
     fn.description = `Build the ${name} project`;
 
     exports[taskName] = fn;
@@ -126,7 +147,7 @@ function addBuildTask(name) {
 
 function addWatchTask(name, build) {
     const fn = function () {
-        return watch(`${__dirname}/packages/${name}/lib/**/*`, build);
+        return watch(paths.libGlob(name), build);
     };
 
     let taskName   = `watch${capitalize(name)}`;
@@ -141,17 +162,14 @@ function addWatchTask(name, build) {
 
 function addLintTask(name) {
     const fn = function () {
-        const projectDir = path.join(__dirname, 'packages', name);
-        const configPath = path.join(projectDir, 'tsconfig.json');
-
-        const program = Linter.createProgram(configPath, projectDir);
-        const project = ts.createProject(path.join(__dirname, 'packages', name, 'tsconfig.json'));
+        const program = Linter.createProgram(paths.tsconfig(name), paths.project(name));
+        const project = ts.createProject(paths.tsconfig(name));
 
         return project.src()
                       .pipe(tslint({
-                          fix: false,
-                          configuration: path.join(__dirname, 'tslint.json'),
-                          program: program,
+                          fix:           false,
+                          configuration: paths.tslint,
+                          program:       program,
                       }))
                       .pipe(tslint.report({
                           allowWarnings: true,
@@ -195,13 +213,26 @@ function addCoverageTask(name) {
 }
 
 function addCleanTask(name) {
-    const fn = function () {
-        return parallel(
-            del(path.join(__dirname, 'packages', name, 'dist')),
-            del(path.join(process.cwd(), 'build', 'cache', name)),
-            del(path.join(process.cwd(), 'build', 'coverage', name)),
-        );
-    };
+    function cleanTask(dir, path) {
+        const fn = function () {
+            return del(path);
+        }
+
+        let taskName   = `clean${capitalize(name)}${capitalize(dir)}`;
+        fn.name        = taskName;
+        fn.displayName = `clean:${name}:${dir}`;
+        fn.description = `Clean out the ${dir} directory for ${name}`;
+
+        exports[taskName] = fn;
+
+        return fn;
+    }
+
+    const fn = parallel(
+        cleanTask('dist', paths.dist(name)),
+        cleanTask('cache', paths.cache(name)),
+        cleanTask('coverage', paths.coverage(name)),
+    );
 
     let taskName   = `clean${capitalize(name)}`;
     fn.name        = taskName;
@@ -256,7 +287,7 @@ function setupProjects(projects) {
                 [buildTasks] = setupProject(buildTasks, proj);
             }
 
-            projectBuilds = projectBuilds.concat(parallel(buildTasks));
+            projectBuilds.push(parallel(buildTasks));
         } else {
             [projectBuilds] = setupProject(projectBuilds, project);
         }
@@ -328,7 +359,7 @@ let projects = [
 ];
 
 let extras = [];
-for (let project of fs.readdirSync(path.join(__dirname, 'packages'))) {
+for (let project of fs.readdirSync(paths.packages)) {
     if (isValid(project)) {
         if (!deepCheck(projects, project))
             extras.push(project);
