@@ -41,13 +41,12 @@ function isValid(project) {
            && fs.existsSync(paths.packageJson(project));
 }
 
-function toArgs(flag, array) {
-    let args = [];
-    for (let element of array) {
-        args.push(`${flag}=${element}`);
-    }
+const prefix = '@bitform/';
+function fixPrefix(pkg) {
+    if (pkg.startsWith(prefix))
+        return pkg.substr(prefix.length);
 
-    return args;
+    return pkg;
 }
 
 function isJavaScript(file) {
@@ -338,33 +337,32 @@ function setupProjects(projects) {
 
 // Setup all of the tasks
 
-function deepCheck(projects, project) {
-    for (let proj of projects) {
-        if (Array.isArray(proj)) {
-            if (deepCheck(proj, project)) return true;
-        } else if (proj === project) return true;
-    }
-
-    return false;
+let deps = {};
+let packages = fs.readdirSync(paths.packages).filter(isValid);
+for (let pkg of packages) {
+    deps[pkg] = Object.keys(require(paths.packageJson(pkg)).dependencies)
+                      .map(fixPrefix);
 }
 
-let projects = [
-    ['util'],
-    ['configuration', 'storage', 'user', 'user-management'],
-    ['blog', 'documentation', 'forum', 'store', 'wiki'],
-    ['component', 'provider', 'request', 'response', 'routing-path'],
-    ['component-parser', 'component-renderer', 'layout', 'routing'],
-    ['component-html-renderer', 'page'],
-    ['module'],
-];
-
-let extras = [];
-for (let project of fs.readdirSync(paths.packages)) {
-    if (isValid(project)) {
-        if (!deepCheck(projects, project))
-            extras.push(project);
-    }
+for (let [name, dependencies] of Object.entries(deps)) {
+    deps[name] = dependencies.filter((dep) => Object.keys(deps).includes(dep));
 }
 
-projects.push(extras);
+let projects = [];
+let group = Object.entries(deps)
+                  .filter(([_, dependencies]) => dependencies.length === 0)
+                  .map(([name, _]) => name);
+
+while (group.length > 0) {
+    projects.push(group);
+
+    for (let name of group) {
+        delete deps[name];
+    }
+
+    group = Object.entries(deps)
+                  .filter(([_, dependencies]) => dependencies.every((dep) => projects.flat().includes(dep)))
+                  .map(([name, _]) => name);
+}
+
 exports.default = setupProjects(projects);
