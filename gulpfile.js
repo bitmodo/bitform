@@ -54,6 +54,22 @@ function isJavaScript(file) {
     return file.extname === '.js';
 }
 
+function flat (array) {
+    let result = [];
+    flatten(array, result);
+    return result;
+}
+
+function flatten(array, result) {
+    for (const element of array) {
+        if (Array.isArray(element)) {
+            flatten(element, result);
+        } else {
+            result.push(element);
+        }
+    }
+}
+
 // Function generators
 
 function generateBuildFunction(displayName, projects) {
@@ -420,7 +436,7 @@ while (group.length > 0) {
     }
 
     group = Object.entries(deps)
-                  .filter(([_, dependencies]) => dependencies.every((dep) => projects.flat().includes(dep)))
+                  .filter(([_, dependencies]) => dependencies.every((dep) => flat(projects).includes(dep)))
                   .map(([name, _]) => name);
 }
 
