@@ -10,6 +10,7 @@ const buildDir    = 'build',
       coverageDir = 'coverage';
 
 const tslint       = path.join(root, 'tslint.json'),
+      tsconfig     = path.join(root, 'tsconfig.base.json'),
       buildPath    = path.join(cwd, buildDir),
       cachePath    = path.join(buildPath, cacheDir),
       coveragePath = path.join(buildPath, coverageDir);
@@ -22,9 +23,6 @@ const packagesDir = 'packages',
 const packages    = path.join(root, packagesDir),
       project     = function (name) {
           return path.join(packages, name)
-      },
-      tsconfig    = function (name) {
-          return path.join(project(name), 'tsconfig.json')
       },
       packageJson = function (name) {
           return path.join(project(name), 'package.json')

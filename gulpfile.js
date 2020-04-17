@@ -4,7 +4,7 @@
 const { src, dest, parallel, series, watch, lastRun } = require('gulp');
 
 // Utility Gulp modules
-// const through = require('through2');
+const through = require('through2');
 const gulpIf = require('gulp-if');
 
 // Compilation Gulp plugins
@@ -37,11 +37,12 @@ function capitalize(string) {
 
 function isValid(project) {
     return fs.statSync(paths.project(project)).isDirectory()
-           && fs.existsSync(paths.tsconfig(project))
+           // && fs.existsSync(paths.tsconfig(project))
            && fs.existsSync(paths.packageJson(project));
 }
 
 const prefix = '@bitform/';
+
 function fixPrefix(pkg) {
     if (pkg.startsWith(prefix))
         return pkg.substr(prefix.length);
@@ -51,6 +52,48 @@ function fixPrefix(pkg) {
 
 function isJavaScript(file) {
     return file.extname === '.js';
+}
+
+// Function generators
+
+function generateBuildFunction(displayName, projects) {
+    let globs = [];
+    for (let project of projects) {
+        globs.push(paths.libGlob(project));
+    }
+
+    return function () {
+        const project = ts.createProject(paths.tsconfig, { skipLibCheck: true });
+
+        return src(globs, { since: lastRun(displayName), base: paths.root })
+            .pipe(sourcemap.init({ loadMaps: true }))
+            .pipe(project())
+            .pipe(gulpIf(isJavaScript, terser({
+                compress: {
+                    ecma:   2018,
+                    module: true,
+                },
+                mangle:   {
+                    module: true,
+                },
+                ecma:     2018,
+                module:   true,
+            })))
+            .pipe(through.obj(function (file, _, cb) {
+                file.path = file.path.split(path.sep).map(part => part === 'lib' ? 'dist' : part).join(path.sep);
+
+                cb(null, file);
+            }))
+            .pipe(gulpIf(isJavaScript, sourcemap.mapSources(function (sourcePath, file) {
+                if (sourcePath.endsWith('.ts')) {
+                    return path.relative(path.dirname(file.relative), sourcePath);
+                }
+
+                return sourcePath;
+            })))
+            .pipe(gulpIf(isJavaScript, sourcemap.write('.')))
+            .pipe(dest(paths.root));
+    };
 }
 
 function generateMochaFunction(name) {
@@ -103,36 +146,38 @@ function generateNycFunction(name) {
 
 // Task functions
 
-function addBuildTask(name) {
+function addBuildTask(name, projects) {
     const displayName = `build:${name}`;
 
-    const fn = function () {
-        const project = ts.createProject(paths.tsconfig(name));
+    const fn = generateBuildFunction(displayName, projects);
 
-        return src(paths.libGlob(name), { since: lastRun(displayName) })
-            .pipe(sourcemap.init({ loadMaps: true }))
-            .pipe(project())
-            .pipe(gulpIf(isJavaScript, terser({
-                compress: {
-                    ecma:   2018,
-                    module: true,
-                },
-                mangle:   {
-                    module: true,
-                },
-                ecma:     2018,
-                module:   true,
-            })))
-            .pipe(gulpIf(isJavaScript, sourcemap.mapSources(function (sourcePath, file) {
-                if (sourcePath.endsWith('.ts')) {
-                    return path.join(path.relative(file.dirname, paths.libRoot(name)), path.relative(paths.dist(name), file.dirname), path.basename(sourcePath));
-                }
-
-                return sourcePath;
-            })))
-            .pipe(gulpIf(isJavaScript, sourcemap.write('.')))
-            .pipe(dest(paths.dist(name)));
-    };
+    // const fn = function () {
+    //     const project = ts.createProject(paths.tsconfig, { skipLibCheck: true });
+    //
+    //     return src(paths.libGlob(name), { since: lastRun(displayName) })
+    //         .pipe(sourcemap.init({ loadMaps: true }))
+    //         .pipe(project())
+    //         .pipe(gulpIf(isJavaScript, terser({
+    //             compress: {
+    //                 ecma:   2018,
+    //                 module: true,
+    //             },
+    //             mangle:   {
+    //                 module: true,
+    //             },
+    //             ecma:     2018,
+    //             module:   true,
+    //         })))
+    //         .pipe(gulpIf(isJavaScript, sourcemap.mapSources(function (sourcePath, file) {
+    //             if (sourcePath.endsWith('.ts')) {
+    //                 return path.join(path.relative(file.dirname, paths.libRoot(name)), path.relative(paths.dist(name), file.dirname), path.basename(sourcePath));
+    //             }
+    //
+    //             return sourcePath;
+    //         })))
+    //         .pipe(gulpIf(isJavaScript, sourcemap.write('.')))
+    //         .pipe(dest(paths.dist(name)));
+    // };
 
     let taskName   = `build${capitalize(name)}`;
     fn.name        = taskName;
@@ -161,18 +206,17 @@ function addWatchTask(name, build) {
 
 function addLintTask(name) {
     const fn = function () {
-        const program = Linter.createProgram(paths.tsconfig(name), paths.project(name));
-        const project = ts.createProject(paths.tsconfig(name));
+        const program = Linter.createProgram(paths.tsconfig, paths.project(name));
 
-        return project.src()
-                      .pipe(tslint({
-                          fix:           false,
-                          configuration: paths.tslint,
-                          program:       program,
-                      }))
-                      .pipe(tslint.report({
-                          allowWarnings: true,
-                      }));
+        return src(paths.libGlob(name))
+            .pipe(tslint({
+                fix:           false,
+                configuration: paths.tslint,
+                program:       program,
+            }))
+            .pipe(tslint.report({
+                allowWarnings: true,
+            }));
     };
 
     let taskName   = `lint${capitalize(name)}`;
@@ -245,14 +289,15 @@ function addCleanTask(name) {
 
 // Setup functions
 
+let projectBuilds    = [];
 let projectWatches   = [];
 let projectLints     = [];
 let projectCoverages = [];
 let projectTests     = [];
 let projectCleans    = [];
 
-function setupProject(projectBuilds, project) {
-    let buildTask    = addBuildTask(project);
+function setupProject(project) {
+    let buildTask    = addBuildTask(project, [project]);
     let watchTask    = addWatchTask(project, buildTask);
     let lintTask     = addLintTask(project);
     let coverageTask = addCoverageTask(project);
@@ -271,32 +316,46 @@ function setupProject(projectBuilds, project) {
     fn.displayName   = project;
     fn.description   = `Build and test the ${project} project`;
     exports[project] = fn;
-
-    return [projectBuilds];
 }
 
 function setupProjects(projects) {
-    let projectBuilds = [];
+    let buildTasks = [];
+    let groupNum   = 0;
 
-    for (let project of projects) {
+    for (const project of projects) {
         if (Array.isArray(project)) {
-            let buildTasks = [];
-
-            for (let proj of project) {
-                [buildTasks] = setupProject(buildTasks, proj);
+            for (const proj of project) {
+                setupProject(proj);
             }
 
-            projectBuilds.push(parallel(buildTasks));
+            const phase       = `phase${groupNum++}`;
+            const displayName = `build:${phase}`;
+            const fn          = generateBuildFunction(displayName, project);
+
+            fn.name        = phase;
+            fn.displayName = displayName;
+            fn.description = `Build group ${groupNum - 1} projects`;
+
+            exports[phase] = fn;
+
+            buildTasks.push(fn);
+            // projectBuilds.push(parallel(buildTasks));
         } else {
-            [projectBuilds] = setupProject(projectBuilds, project);
+            setupProject(project);
         }
     }
 
-    const buildFn       = series(projectBuilds);
+    const buildFn       = series(buildTasks);
     buildFn.name        = 'build';
     buildFn.displayName = 'build';
     buildFn.description = 'Build all of the projects';
     exports.build       = buildFn;
+
+    const buildAllFn       = parallel(projectBuilds);
+    buildAllFn.name        = 'buildAll';
+    buildAllFn.displayName = 'build:all';
+    buildAllFn.description = 'Build all of the projects in parallel without checking dependencies';
+    exports.buildAll       = buildAllFn;
 
     const watchFn       = series(exports.build, parallel(projectWatches));
     watchFn.name        = 'watch';
@@ -337,7 +396,7 @@ function setupProjects(projects) {
 
 // Setup all of the tasks
 
-let deps = {};
+let deps     = {};
 let packages = fs.readdirSync(paths.packages).filter(isValid);
 for (let pkg of packages) {
     deps[pkg] = Object.keys(require(paths.packageJson(pkg)).dependencies)
@@ -349,9 +408,9 @@ for (let [name, dependencies] of Object.entries(deps)) {
 }
 
 let projects = [];
-let group = Object.entries(deps)
-                  .filter(([_, dependencies]) => dependencies.length === 0)
-                  .map(([name, _]) => name);
+let group    = Object.entries(deps)
+                     .filter(([_, dependencies]) => dependencies.length === 0)
+                     .map(([name, _]) => name);
 
 while (group.length > 0) {
     projects.push(group);
