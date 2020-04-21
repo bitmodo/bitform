@@ -40,7 +40,9 @@ jobs:
         run: npx lerna bootstrap
       - name: Build
         run: gulp build
+      - name: Generate coverage
+        run: gulp coverage
       - name: Run coverage
-        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -l TypeScript -r build/coverage/lcov.info
+        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report -l TypeScript -r "${{ github.workspace}}/build/coverage/lcov.info"
         env:
             CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_KEY }}
