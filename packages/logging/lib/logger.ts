@@ -53,33 +53,43 @@ const defaultStringifier: Stringifier = (record: ILogRecord) => {
 /**
  *
  */
+export interface LoggerConfig {
+    prefix?: string;
+    level?: Level;
+    stringifier?: Stringifier;
+}
+
+/**
+ *
+ */
 export class Logger extends AbstractLogger {
+    readonly #parent?: Logger;
+
     readonly #prefix: string;
     readonly #level: Level;
     #stringifier?: Stringifier;
 
     #outputs: LogOutput[] = [];
 
-    public constructor(stringifier: Stringifier);
-    public constructor(pre: string, stringifier?: Stringifier);
-    public constructor(lvl?: Level, pre?: string, stringifier?: Stringifier);
+    public constructor(config?: LoggerConfig);
+    public constructor(parent?: Logger, config?: LoggerConfig);
 
-    public constructor(lvl?: Stringifier | string | Level, pre?: string | Stringifier, stringifier?: Stringifier) {
+    public constructor(parent?: Logger | LoggerConfig, config?: LoggerConfig) {
         super();
 
-        if (lvl instanceof Level) { // lvl is a Level
-            this.#prefix      = (pre || '') as string;
-            this.#level       = lvl || Level.info;
-            this.#stringifier = stringifier;
-        } else if (typeof lvl === 'function') { // lvl is a Stringifier
-            this.#prefix      = '';
-            this.#level       = Level.info;
-            this.#stringifier = lvl as Stringifier;
-        } else { // lvl is a prefix string or undefined
-            this.#prefix      = (lvl || '') as string;
-            this.#level       = Level.info;
-            this.#stringifier = pre as Stringifier;
+        let p: Logger | undefined, c: LoggerConfig | undefined;
+        if (parent instanceof Logger) {
+            p = parent;
+            c = config;
+        } else {
+            p = undefined;
+            c = parent;
         }
+
+        this.#parent      = p;
+        this.#prefix      = c?.prefix ?? '';
+        this.#level       = c?.level ?? Level.info;
+        this.#stringifier = c?.stringifier;
 
         this.addOutput(new ConsoleOutput());
     }
@@ -93,7 +103,7 @@ export class Logger extends AbstractLogger {
     }
 
     public get outputs(): LogOutput[] {
-        return this.#outputs;
+        return this.#outputs.concat(this.#parent?.outputs || []);
     }
 
     public set outputs(outputs: LogOutput[]) {
@@ -108,8 +118,19 @@ export class Logger extends AbstractLogger {
         this.#stringifier = stringifier;
     }
 
+    public child(config?: LoggerConfig): Logger {
+        return new Logger({
+            prefix:      this.prefix,
+            level:       this.level,
+            stringifier: this.stringifier,
+
+            ...config,
+        });
+    }
+
     public addOutput(output: LogOutput) {
-        this.#outputs.push(output);
+        if (!this.outputs.includes(output))
+            this.#outputs.push(output);
     }
 
     public log(level: Level, err: Error, message: string): ILogRecord;
@@ -151,7 +172,7 @@ export class Logger extends AbstractLogger {
     }
 
     private out(record: ILogRecord) {
-        this.#outputs.forEach((output: LogOutput) => { output.out(record.level, this.stringify(output, record)); });
+        this.outputs.forEach((output: LogOutput) => { output.out(record.level, this.stringify(output, record)); });
     }
 
     private stringify(output: LogOutput, record: ILogRecord): string {
@@ -161,6 +182,10 @@ export class Logger extends AbstractLogger {
 
         if (this.stringifier) {
             return this.stringifier(record);
+        }
+
+        if (this.#parent && this.#parent.stringifier) {
+            return this.#parent.stringifier(record);
         }
 
         return defaultStringifier(record);
