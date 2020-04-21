@@ -17,10 +17,10 @@ it('passes', () => {
     [a,b,c,d].forEach((logger) => logger.addOutput(fileOutput));
 
     a.info('test');
-    b.debug('test 2');
-    c.warn('test 3');
+    b.debug('test 2', true);
+    c.warn('test 3', 4);
     d.severe(new Error('test 8'), 'test 7');
-    e.error('test 4');
-    f.info('test 5');
-    g.debug('test 6');
+    e.error('test 4', 12.5);
+    f.info('test 5', undefined);
+    g.debug('test 6', null);
 });

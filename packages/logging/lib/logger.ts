@@ -22,28 +22,26 @@ export type ErrorLogger = {
  *
  */
 export type ObjectLogger = {
-    [lvl in LevelNames]: (object: unknown) => ILogRecord;
+    [lvl in LevelNames]: (...objects: unknown[]) => ILogRecord;
 };
 
 /**
  *
  */
 export abstract class AbstractLogger implements StringLogger, ErrorLogger, ObjectLogger {
-    public debug: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((object: unknown) => ILogRecord)  = this.impl(Level.debug);
-    public info: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((object: unknown) => ILogRecord)   = this.impl(Level.info);
-    public warn: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((object: unknown) => ILogRecord)   = this.impl(Level.warn);
-    public error: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((object: unknown) => ILogRecord)  = this.impl(Level.error);
-    public severe: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((object: unknown) => ILogRecord) = this.impl(Level.severe);
+    public debug: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((...objects: unknown[]) => ILogRecord)  = this.impl(Level.debug);
+    public info: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((...objects: unknown[]) => ILogRecord)   = this.impl(Level.info);
+    public warn: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((...objects: unknown[]) => ILogRecord)   = this.impl(Level.warn);
+    public error: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((...objects: unknown[]) => ILogRecord)  = this.impl(Level.error);
+    public severe: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((...objects: unknown[]) => ILogRecord) = this.impl(Level.severe);
 
-    // public abstract log(level: Level, template: string): ILogRecord;
     public abstract log(level: Level, err: Error, message: string): ILogRecord;
-    public abstract log(level: Level, message: string | unknown): ILogRecord;
+    public abstract log(level: Level, message: string): ILogRecord;
+    public abstract log(level: Level, ...objects: unknown[]): ILogRecord;
 
-    private impl(lvl: Level): (message: string | Error | unknown, error?: string) => ILogRecord {
-        return (message: string | Error | any, error?: string) => {
-            if (message instanceof Error)
-                return this.log(lvl, message, error as string);
-            return this.log(lvl, message);
+    private impl(lvl: Level): (...args: unknown[]) => ILogRecord {
+        return (...args: unknown[]) => {
+            return this.log(lvl, ...args);
         };
     }
 }
@@ -114,23 +112,23 @@ export class Logger extends AbstractLogger {
         this.#outputs.push(output);
     }
 
-    // public log(level: Level, template: string): ILogRecord;
     public log(level: Level, err: Error, message: string): ILogRecord;
-    public log(level: Level, message: string | unknown): ILogRecord;
+    public log(level: Level, message: string): ILogRecord;
+    public log(level: Level, ...objects: unknown[]): ILogRecord;
 
-    public log(lvl: Level, message: string | Error | unknown, error?: string): ILogRecord | undefined {
+    public log(lvl: Level, ...args: unknown[]): ILogRecord | undefined {
         if (lvl < this.level)
             return undefined;
 
-        if (typeof message === 'string') {
-            return this.logMessage(lvl, message);
+        if (args.length === 2 && args[0] instanceof Error && typeof args[1] === 'string') {
+            return this.logError(lvl, args[0], args[1]);
         }
 
-        if (message instanceof Error && error) {
-            return this.logError(lvl, message, error);
+        if (args.length === 1 && typeof args[0] === 'string') {
+            return this.logMessage(lvl, args[0]);
         }
 
-        return this.logObject(lvl, message);
+        return this.logObjects(lvl, ...args);
     }
 
     private logMessage(lvl: Level, message: string | string[]): ILogRecord {
@@ -148,8 +146,8 @@ export class Logger extends AbstractLogger {
         return this.logMessage(lvl, messages);
     }
 
-    private logObject(lvl: Level, object: unknown): ILogRecord {
-        return this.logMessage(lvl, `${object}`);
+    private logObjects(lvl: Level, ...objects: unknown[]): ILogRecord {
+        return this.logMessage(lvl, `${objects.map((object) => typeof object === 'undefined' ? 'undefined' : (object ?? 'null')).join(', ')}`);
     }
 
     private out(record: ILogRecord) {
