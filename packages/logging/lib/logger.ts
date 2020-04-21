@@ -22,24 +22,24 @@ export type ErrorLogger = {
  *
  */
 export type ObjectLogger = {
-    [lvl in LevelNames]: (object: any) => ILogRecord;
+    [lvl in LevelNames]: (object: unknown) => ILogRecord;
 };
 
 /**
  *
  */
 export abstract class AbstractLogger implements StringLogger, ErrorLogger, ObjectLogger {
-    public debug: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((object: any) => ILogRecord)  = this.impl(Level.debug);
-    public info: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((object: any) => ILogRecord)   = this.impl(Level.info);
-    public warn: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((object: any) => ILogRecord)   = this.impl(Level.warn);
-    public error: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((object: any) => ILogRecord)  = this.impl(Level.error);
-    public severe: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((object: any) => ILogRecord) = this.impl(Level.severe);
+    public debug: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((object: unknown) => ILogRecord)  = this.impl(Level.debug);
+    public info: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((object: unknown) => ILogRecord)   = this.impl(Level.info);
+    public warn: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((object: unknown) => ILogRecord)   = this.impl(Level.warn);
+    public error: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((object: unknown) => ILogRecord)  = this.impl(Level.error);
+    public severe: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((object: unknown) => ILogRecord) = this.impl(Level.severe);
 
     // public abstract log(level: Level, template: string): ILogRecord;
     public abstract log(level: Level, err: Error, message: string): ILogRecord;
-    public abstract log(level: Level, message: string | any): ILogRecord;
+    public abstract log(level: Level, message: string | unknown): ILogRecord;
 
-    private impl(lvl: Level): (message: string | Error | any, error?: string) => ILogRecord {
+    private impl(lvl: Level): (message: string | Error | unknown, error?: string) => ILogRecord {
         return (message: string | Error | any, error?: string) => {
             if (message instanceof Error)
                 return this.log(lvl, message, error as string);
@@ -116,9 +116,9 @@ export class Logger extends AbstractLogger {
 
     // public log(level: Level, template: string): ILogRecord;
     public log(level: Level, err: Error, message: string): ILogRecord;
-    public log(level: Level, message: string | any): ILogRecord;
+    public log(level: Level, message: string | unknown): ILogRecord;
 
-    public log(lvl: Level, message: string | Error | any, error?: string): ILogRecord | undefined {
+    public log(lvl: Level, message: string | Error | unknown, error?: string): ILogRecord | undefined {
         if (lvl < this.level)
             return undefined;
 

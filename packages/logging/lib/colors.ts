@@ -26,10 +26,12 @@ const none: (...text: unknown[]) => string = (...text: unknown[]) => {
     return text.join(' ');
 };
 
+// Generic colors
 const fine    = white,
       issue   = yellow,
       problem = red;
 
+// Message colors
 const timestamp = supportsColor ? grey : none;
 const prefix    = supportsColor ? cyan : none;
 const level     = supportsColor ? bold : none;
