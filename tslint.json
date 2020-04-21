@@ -5,6 +5,7 @@
         "member-ordering": [true, {"order": "fields-first"}],
         "no-for-in": true,
         "no-var-requires": true,
+        "one-variable-per-declaration": false,
         "promise-function-async": true,
         "unified-signatures": true,
 
