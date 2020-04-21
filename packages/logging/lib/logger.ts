@@ -35,13 +35,15 @@ export abstract class AbstractLogger implements StringLogger, ErrorLogger, Objec
     public error: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((object: any) => ILogRecord)  = this.impl(Level.error);
     public severe: ((message: string) => ILogRecord) & ((err: Error, message: string) => ILogRecord) & ((object: any) => ILogRecord) = this.impl(Level.severe);
 
-    public abstract log(level: Level, template: string, ...args: any[]): ILogRecord;
+    // public abstract log(level: Level, template: string): ILogRecord;
     public abstract log(level: Level, err: Error, message: string): ILogRecord;
-    public abstract log(level: Level, object: any): ILogRecord;
+    public abstract log(level: Level, message: string | any): ILogRecord;
 
     private impl(lvl: Level): (message: string | Error | any, error?: string) => ILogRecord {
         return (message: string | Error | any, error?: string) => {
-            return this.log(lvl, message, error);
+            if (message instanceof Error)
+                return this.log(lvl, message, error as string);
+            return this.log(lvl, message);
         };
     }
 }
@@ -112,9 +114,9 @@ export class Logger extends AbstractLogger {
         this.#outputs.push(output);
     }
 
-    public log(level: Level, template: string, ...args: any[]): ILogRecord;
+    // public log(level: Level, template: string): ILogRecord;
     public log(level: Level, err: Error, message: string): ILogRecord;
-    public log(level: Level, object: any): ILogRecord;
+    public log(level: Level, message: string | any): ILogRecord;
 
     public log(lvl: Level, message: string | Error | any, error?: string): ILogRecord | undefined {
         if (lvl < this.level)
@@ -146,12 +148,12 @@ export class Logger extends AbstractLogger {
         return this.logMessage(lvl, messages);
     }
 
-    private logObject(lvl: Level, object: any): ILogRecord {
-        return this.logMessage(lvl, object.toString());
+    private logObject(lvl: Level, object: unknown): ILogRecord {
+        return this.logMessage(lvl, `${object}`);
     }
 
     private out(record: ILogRecord) {
-        this.#outputs.forEach((output: LogOutput) => output.out(record.level, this.stringify(output, record)));
+        this.#outputs.forEach((output: LogOutput) => { output.out(record.level, this.stringify(output, record)); });
     }
 
     private stringify(output: LogOutput, record: ILogRecord): string {
