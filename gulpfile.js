@@ -114,6 +114,8 @@ function generateBuildFunction(displayName, projects) {
 
 function generateMochaFunction(name) {
     return function () {
+        process.env.TS_NODE_PROJECT = path.join(paths.root, 'tsconfig.base.json');
+
         return src(paths.testGlob(name))
             .pipe(mocha());
     };
@@ -166,34 +168,6 @@ function addBuildTask(name, projects) {
     const displayName = `build:${name}`;
 
     const fn = generateBuildFunction(displayName, projects);
-
-    // const fn = function () {
-    //     const project = ts.createProject(paths.tsconfig, { skipLibCheck: true });
-    //
-    //     return src(paths.libGlob(name), { since: lastRun(displayName) })
-    //         .pipe(sourcemap.init({ loadMaps: true }))
-    //         .pipe(project())
-    //         .pipe(gulpIf(isJavaScript, terser({
-    //             compress: {
-    //                 ecma:   2018,
-    //                 module: true,
-    //             },
-    //             mangle:   {
-    //                 module: true,
-    //             },
-    //             ecma:     2018,
-    //             module:   true,
-    //         })))
-    //         .pipe(gulpIf(isJavaScript, sourcemap.mapSources(function (sourcePath, file) {
-    //             if (sourcePath.endsWith('.ts')) {
-    //                 return path.join(path.relative(file.dirname, paths.libRoot(name)), path.relative(paths.dist(name), file.dirname), path.basename(sourcePath));
-    //             }
-    //
-    //             return sourcePath;
-    //         })))
-    //         .pipe(gulpIf(isJavaScript, sourcemap.write('.')))
-    //         .pipe(dest(paths.dist(name)));
-    // };
 
     let taskName   = `build${capitalize(name)}`;
     fn.name        = taskName;
