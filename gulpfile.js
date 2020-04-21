@@ -5,7 +5,7 @@ const { src, dest, parallel, series, watch, lastRun } = require('gulp');
 
 // Utility Gulp modules
 const through = require('through2');
-const gulpIf = require('gulp-if');
+const gulpIf  = require('gulp-if');
 
 // Compilation Gulp plugins
 const sourcemap = require('gulp-sourcemaps');
@@ -14,7 +14,6 @@ const terser    = require('gulp-terser');
 
 // Check Gulp plugins
 const mocha      = require('gulp-mocha');
-// const { NYC }    = require('nyc');
 const tslint     = require('gulp-tslint');
 const { Linter } = require('tslint');
 
@@ -37,7 +36,6 @@ function capitalize(string) {
 
 function isValid(project) {
     return fs.statSync(paths.project(project)).isDirectory()
-           // && fs.existsSync(paths.tsconfig(project))
            && fs.existsSync(paths.packageJson(project));
 }
 
@@ -54,12 +52,6 @@ function isJavaScript(file) {
     return file.extname === '.js';
 }
 
-function flat (array) {
-    let result = [];
-    flatten(array, result);
-    return result;
-}
-
 function flatten(array, result) {
     for (const element of array) {
         if (Array.isArray(element)) {
@@ -68,6 +60,12 @@ function flatten(array, result) {
             result.push(element);
         }
     }
+}
+
+function flat(array) {
+    let result = [];
+    flatten(array, result);
+    return result;
 }
 
 // Function generators
@@ -114,7 +112,8 @@ function generateBuildFunction(displayName, projects) {
 
 function generateMochaFunction(name) {
     return function () {
-        process.env.TS_NODE_PROJECT = path.join(paths.root, 'tsconfig.base.json');
+        // noinspection JSValidateTypes
+        process.env.TS_NODE_PROJECT = paths.tsconfig;
 
         return src(paths.testGlob(name))
             .pipe(mocha());
@@ -144,7 +143,7 @@ function generateNycFunction(name) {
             detached: false,
             env:      {
                 ...process.env,
-                TS_NODE_PROJECT: path.join(paths.root, 'tsconfig.base.json'),
+                TS_NODE_PROJECT: paths.tsconfig,
             },
         });
 
@@ -329,7 +328,6 @@ function setupProjects(projects) {
             exports[phase] = fn;
 
             buildTasks.push(fn);
-            // projectBuilds.push(parallel(buildTasks));
         } else {
             setupProject(project);
         }
@@ -389,6 +387,7 @@ function setupProjects(projects) {
 let deps     = {};
 let packages = fs.readdirSync(paths.packages).filter(isValid);
 for (let pkg of packages) {
+    // noinspection JSUnresolvedVariable
     deps[pkg] = Object.keys(require(paths.packageJson(pkg)).dependencies)
                       .map(fixPrefix);
 }
