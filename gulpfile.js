@@ -5,12 +5,13 @@ const { src, dest, parallel, series, watch, lastRun } = require('gulp');
 
 // Utility Gulp modules
 const through = require('through2');
-const gulpIf  = require('gulp-if');
+const merge   = require('merge2');
+// const gulpIf  = require('gulp-if');
 
 // Compilation Gulp plugins
 const sourcemap = require('gulp-sourcemaps');
 const ts        = require('gulp-typescript');
-const terser    = require('gulp-terser');
+const terser    = require('gulp-terser-js');
 
 // Check Gulp plugins
 const mocha      = require('gulp-mocha');
@@ -48,10 +49,6 @@ function fixPrefix(pkg) {
     return pkg;
 }
 
-function isJavaScript(file) {
-    return file.extname === '.js';
-}
-
 function flatten(array, result) {
     for (const element of array) {
         if (Array.isArray(element)) {
@@ -79,34 +76,44 @@ function generateBuildFunction(displayName, projects) {
     return function () {
         const project = ts.createProject(paths.tsconfig, { skipLibCheck: true });
 
-        return src(globs, { since: lastRun(displayName), base: paths.root })
+        const directoryFixer = () => through.obj(function (file, _, cb) {
+            file.path = file.path.split(path.sep).map(part => part === 'lib' ? 'dist' : part).join(path.sep);
+
+            cb(null, file);
+        });
+
+        const out = src(globs, { since: lastRun(displayName), base: paths.root })
             .pipe(sourcemap.init({ loadMaps: true }))
-            .pipe(project())
-            .pipe(gulpIf(isJavaScript, terser({
-                compress: {
-                    ecma:   2018,
-                    module: true,
-                },
-                mangle:   {
-                    module: true,
-                },
-                ecma:     2018,
-                module:   true,
-            })))
-            .pipe(through.obj(function (file, _, cb) {
-                file.path = file.path.split(path.sep).map(part => part === 'lib' ? 'dist' : part).join(path.sep);
+            .pipe(project());
 
-                cb(null, file);
-            }))
-            .pipe(gulpIf(isJavaScript, sourcemap.mapSources(function (sourcePath, file) {
-                if (sourcePath.endsWith('.ts')) {
-                    return path.relative(path.dirname(file.relative), sourcePath);
-                }
+        return merge([
+            out.js
+               .pipe(terser({
+                   compress: {
+                       ecma:   2018,
+                       module: true,
+                   },
+                   mangle:   {
+                       module: true,
+                   },
+                   output: {
+                       ecma: 2018,
+                   },
+                   ecma:     2018,
+                   module:   true,
+               }))
+               .pipe(directoryFixer())
+               .pipe(sourcemap.mapSources(function (sourcePath, file) {
+                   if (sourcePath.endsWith('.ts')) {
+                       return path.relative(path.dirname(file.relative), sourcePath);
+                   }
 
-                return sourcePath;
-            })))
-            .pipe(gulpIf(isJavaScript, sourcemap.write('.')))
-            .pipe(dest(paths.root));
+                   return sourcePath;
+               }))
+               .pipe(sourcemap.write('.')),
+            out.dts
+               .pipe(directoryFixer())
+        ]).pipe(dest(paths.root));
     };
 }
 

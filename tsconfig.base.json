@@ -3,6 +3,7 @@
         "incremental": true,
         "target": "ES2018",
         "module": "CommonJS",
+        "moduleResolution": "Node",
         "allowJs": true,
         "checkJs": true,
         "declaration": true,

@@ -89,7 +89,5 @@
         "quotemark": [true, "single", "backtick"],
         "semicolon": [true, "always"]
     },
-    "jsRules": {
-    },
     "defaultSeverity": "error"
 }
