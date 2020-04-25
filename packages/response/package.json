@@ -7,6 +7,10 @@
         "dist/**/*"
     ],
     "dependencies": {
+        "@bitform/content-type": "^0.1.0-alpha",
+        "@bitform/cookie": "^0.1.0-alpha",
+        "@bitform/encoding": "^0.1.0-alpha",
+        "@bitform/status-code": "^0.1.0-alpha",
         "@types/node": "^13.11.0"
     },
     "bundledDependencies": [],

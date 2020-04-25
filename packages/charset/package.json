@@ -1,16 +1,12 @@
 {
-    "name": "@bitform/routing",
-    "description": "The routing API for Bitform",
+    "name": "@bitform/charset",
+    "description": "The charset API for Bitform",
     "version": "0.1.0-alpha",
     "main": "dist/index.js",
     "files": [
         "dist/**/*"
     ],
     "dependencies": {
-        "@bitform/method": "^0.1.0-alpha",
-        "@bitform/request": "^0.1.0-alpha",
-        "@bitform/response": "^0.1.0-alpha",
-        "@bitform/routing-path": "^0.1.0-alpha",
         "@types/node": "^13.11.0"
     },
     "bundledDependencies": [],

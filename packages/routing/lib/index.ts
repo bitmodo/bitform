@@ -1,22 +1,7 @@
+import { Method }            from '@bitform/method';
 import { Request }           from '@bitform/request';
 import { Response }          from '@bitform/response';
 import { Path as RoutePath } from '@bitform/routing-path';
-
-/**
- *
- */
-export enum Method {
-    get     = 'get',
-    post    = 'post',
-    put     = 'put',
-    delete  = 'delete',
-
-    head    = 'head',
-    connect = 'connect',
-    options = 'options',
-    trace   = 'trace',
-    patch   = 'patch',
-}
 
 /**
  *
@@ -50,7 +35,7 @@ export abstract class Route {
     }
 
     public set callbacks(callbacks: Callbacks) {
-        this.#callbacks = {...this.#callbacks, ...callbacks};
+        this.#callbacks = { ...this.#callbacks, ...callbacks };
     }
 
     public add(method: Method, callback: Callback): this {
