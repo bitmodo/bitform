@@ -28,7 +28,7 @@ GEM
       multipart-post (>= 1.2, < 3)
     faraday-http-cache (2.0.0)
       faraday (~> 0.8)
-    git (1.6.0)
+    git (1.11.0)
       rchardet (~> 1.8)
     kramdown (2.1.0)
     kramdown-parser-gfm (1.1.0)
@@ -51,6 +51,7 @@ GEM
 
 PLATFORMS
   x64-mingw32
+  x86_64-linux
 
 DEPENDENCIES
   danger (= 6.3.2)
